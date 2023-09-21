@@ -1,0 +1,25 @@
+{
+  "name": "surgery-forms",
+  "version": "1.0.0",
+  "description": "",
+  "license": "BSD-3-Clause",
+  "private": true,
+  "scripts": {
+    "build": "d2-app-scripts build",
+    "start": "d2-app-scripts start",
+    "test": "d2-app-scripts test",
+    "deploy": "d2-app-scripts deploy"
+  },
+  "devDependencies": {
+    "@dhis2/cli-app-scripts": "^10.3.10"
+  },
+  "dependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "@dhis2/app-runtime": "^3.9.4",
+    "@dhis2/ui": "^8.14.4",
+    "@heroicons/react": "^2.0.18",
+    "antd": "^5.9.1",
+    "react-jss": "^10.10.0",
+    "react-router-dom": "^6.16.0"
+  }
+}

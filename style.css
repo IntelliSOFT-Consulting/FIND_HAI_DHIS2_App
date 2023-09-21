@@ -1,0 +1,55 @@
+#loginField {
+  background-color: white !important;
+  border-radius: 10px;
+  padding: 1rem 2rem;
+  width: 300px;
+  position: relative;
+}
+
+#loginForm div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+#loginForm div input {
+  width: 100% !important;
+  margin-top: 1.5rem;
+}
+#signInLabel {
+  position: absolute;
+  top: 0px;
+  content: "LOG IN";
+  color: #1d5288;
+  transform: translate(-50%, 50%);
+  left: 50%;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+#forgotPasswordLink {
+  color: #1d5288;
+  margin-left: 1px;
+}
+
+#submit {
+  background: #1d5288;
+  color: white;
+}
+
+.paddingTenClass {
+  align-items: flex-start !important;
+}
+
+#bannerArea {
+  background: url(https://nacare.ncikenya.or.ke/api/staticContent/logo_front);
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin: 2rem auto;
+  background-position: center;
+  height: 50px;
+}
+.borderNoneClass {
+  display: none;
+}
