@@ -1,35 +1,24 @@
 import React, { useEffect, useState } from "react";
 import { Collapse, Form, Button, Row, Col } from "antd";
-import DynamicFormInput from "./DynamicFormInput";
 import { useDataEngine } from "@dhis2/app-runtime";
+import { headingStyles, formStyle, buttonField, buttonStyle } from "./Styles";
 import {
-  formItemLayout,
-  headingStyles,
-  formStyle,
-  buttonField,
-  buttonStyle,
-} from './Styles';
-import { fieldMappings } from "./fieldMappings";
+  renderPatientIDField,
+  renderSecondaryIDField,
+  renderGender,
+  renderDateOfBirth,
+  renderDateOfAdmission,
+  renderDateOfSurgery,
+  renderSurgicalProcedure,
+  renderScheduling,
+  renderSurgeryLocation,
+} from "./RenderFields";
 
 export default function PatientDetails() {
   const [form] = Form.useForm();
   const engine = useDataEngine();
   const [storeData, setStoreData] = useState();
-
-  const patientData = [
-    "Surgical Site Case Report Form Patient ID",
-    "Surgical Site Case Report Form Secondary ID",
-    "Surgical Site Case Report Form Gender",
-    "Surgical Site Case Report Form Date of Birth",
-  ];
-
-  const SurgeryInformation = [
-    "Surgical Site Case Report Form Date of Admission",
-    "Surgical Site Case Report Form Date of Surgery",
-    "Surgical Site Case Report Form Surgical Procedure",
-    "Surgical Site Case Report Form Scheduling",
-    "Surgical Site Case Report Form Surgery Location",
-  ];
+  const [postData, setPostData] = useState(null);
 
   async function fetchData() {
     const { programs } = await engine.query({
@@ -52,9 +41,29 @@ export default function PatientDetails() {
 
   console.log(storeData);
 
+  const requiredFields = [
+    "PatientID",
+    "Gender",
+    "DateOfBirth",
+    "DateOfAdmission",
+    "DateOfSurgery",
+    "SurgicalProcedure",
+    "Scheduling",
+    "SurgeryLocation",
+  ];
+
   const onSave = async () => {
     try {
       const values = await form.validateFields();
+
+      postData = {
+        trackedEntityType: "g47r3pmdiAu",
+        orgUnit: "HO8XXXER1ZS",
+        attributes: Object.keys(values).map((fieldName) => ({
+          attribute: fieldName,
+          value: values[fieldName],
+        })),
+      };
 
       const missingFields = requiredFields.filter(
         (fieldName) => !values[fieldName]
@@ -65,17 +74,20 @@ export default function PatientDetails() {
         return;
       }
 
+      setPostData(values);
+
       await fetch("{{find_url}}/api/trackedEntityInstances", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(postPatient),
+        body: JSON.stringify(postData),
       });
 
-      console.log("Data posted successfully:", postPatient);
+      console.log("Data posted successfully:", postData);
       setSuccessModalVisible(true);
     } catch (errorInfo) {
+      console.log(postData);
       console.log("Failed:", errorInfo);
     }
   };
@@ -91,67 +103,27 @@ export default function PatientDetails() {
               <Form form={form}>
                 <div style={formStyle}>
                   <Row gutter={16}>
-                    {patientData.map((fieldName) => {
-                      const fieldInfo = fieldMappings[fieldName];
-                      if (fieldInfo) {
-                        fieldName;
-                        return (
-                          <Col span={12} key={fieldName}>
-                            <Form.Item
-                              {...formItemLayout}
-                              name={fieldName}
-                              rules={[
-                                {
-                                  required: true,
-                                  message: `Please input ${fieldInfo.label}`,
-                                },
-                              ]}
-                            >
-                              <DynamicFormInput
-                                data={program.programTrackedEntityAttributes}
-                                fieldName={fieldName}
-                                fieldMappings={fieldMappings}
-                                label={fieldInfo.label}
-                              />
-                            </Form.Item>
-                          </Col>
-                        );
-                      }
-                      return null;
-                    })}
+                    <Col span={12}>{renderPatientIDField(program)}</Col>
+                    <Col span={12}>{renderSecondaryIDField(program)}</Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={12}>{renderGender(program)}</Col>
+                    <Col span={12}>{renderDateOfBirth(program)}</Col>
                   </Row>
                 </div>
                 <div style={headingStyles}>SURGERY SUMMARY</div>
                 <br />
                 <div style={formStyle}>
                   <Row gutter={16}>
-                    {SurgeryInformation.map((fieldName) => {
-                      const fieldInfo = fieldMappings[fieldName];
-                      if (fieldInfo) {
-                        return (
-                          <Col span={12} key={fieldName}>
-                            <Form.Item
-                              {...formItemLayout}
-                              name={fieldName}
-                              rules={[
-                                {
-                                  required: true,
-                                  message: `Please input ${fieldInfo.label}`,
-                                },
-                              ]}
-                            >
-                              <DynamicFormInput
-                                data={program.programTrackedEntityAttributes}
-                                fieldName={fieldName}
-                                fieldMappings={fieldMappings}
-                                label={fieldInfo.label}
-                              />
-                            </Form.Item>
-                          </Col>
-                        );
-                      }
-                      return null;
-                    })}
+                    <Col span={12}>{renderDateOfAdmission(program)}</Col>
+                    <Col span={12}>{renderDateOfSurgery(program)}</Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={12}>{renderSurgicalProcedure(program)}</Col>
+                    <Col span={12}>{renderScheduling(program)}</Col>
+                  </Row>
+                  <Row gutter={16}>
+                    <Col span={12}>{renderSurgeryLocation(program)}</Col>
                   </Row>
                 </div>
                 <div style={buttonField}>

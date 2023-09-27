@@ -1,5 +1,5 @@
 import React from "react";
-import { DatePicker, Input, Select } from "antd";
+import { DatePicker, Input, Select, Form } from "antd";
 import "./PatientDetails.css";
 
 const inputStyles = {
@@ -7,9 +7,9 @@ const inputStyles = {
   height: "40px",
 };
 
-const displayBlock = { display: "block", marginBottom: "5px" }
+const displayBlock = { display: "block", marginBottom: "5px" };
 
-export default function DynamicFormInput({ data, fieldName, fieldMappings, label }) {
+export default function DynamicFormInput({ data, fieldName, fieldMappings, label, formItemProps }) {
   if (!data || data.length === 0) {
     return null;
   }
@@ -51,7 +51,9 @@ export default function DynamicFormInput({ data, fieldName, fieldMappings, label
       <label htmlFor={fieldElement.id} style={displayBlock}>
         {label}
       </label>
-      {renderInputField()}
+      <Form.Item {...formItemProps} name={fieldName}>
+        {renderInputField()}
+      </Form.Item>
     </div>
   );
 }
