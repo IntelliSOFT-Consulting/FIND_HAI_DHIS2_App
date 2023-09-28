@@ -24,6 +24,7 @@ export default function PeriOperative() {
   const engine = useDataEngine();
   const [storeData, setStoreData] = useState();
   const [periOperativeFields, setPeriOperativeFields] = useState([]);
+  const [formSubmitted, setFormSubmitted] = useState(false);
 
   async function fetchData() {
     const { programs } = await engine.query({
@@ -66,9 +67,24 @@ export default function PeriOperative() {
   const generateFormFields = (fieldIndexes, requiredFieldNames) => {
     return fieldIndexes.map((index) => {
       const field = periOperativeFields[index];
-
+  
       const isRequired = requiredFieldNames.includes(field.dataElement.name);
-
+  
+      const valueType = field.dataElement.valueType?.toUpperCase();
+  
+      let validationRule = undefined;
+  
+      if (isRequired) {
+        validationRule = {
+          message: `Please enter ${field.dataElement.name}`,
+          validator: async (_, value) => {
+            if (isRequired && (valueType === "BOOLEAN" ? value === undefined || value === null || value === "" : !value)) {
+              return Promise.reject(`Please enter ${field.dataElement.name}`);
+            }
+          },
+        };
+      }
+  
       return (
         <Col span={12} key={field.dataElement.id}>
           <Form.Item
@@ -80,18 +96,27 @@ export default function PeriOperative() {
               </span>
             }
             name={field.dataElement.id}
-            rules={[
-              {
-                message: `Please enter ${field.dataElement.name}`,
-              },
-            ]}
+            rules={[validationRule]}
           >
-            {renderInputField(field.dataElement)}
+            {renderInputField(field.dataElement, isRequired)}
           </Form.Item>
         </Col>
       );
     });
   };
+
+  const handleSave = async () => {
+    try {
+      setFormSubmitted(true);
+      const values = await form.validateFields();
+      console.log("Form values:", values);
+
+      
+    } catch (error) {
+      console.error("Form validation error:", error);
+    }
+  };
+  
 
   return (
     <div>
@@ -200,7 +225,7 @@ export default function PeriOperative() {
                     >
                       CANCEL
                     </Button>
-                    <Button style={buttonStyle} type="success" size="large">
+                    <Button style={buttonStyle} type="success" size="large" onClick={handleSave}>
                       SAVE
                     </Button>
                   </Form.Item>
