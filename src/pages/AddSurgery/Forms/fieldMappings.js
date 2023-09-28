@@ -26,4 +26,7 @@ export const fieldMappings = {
     "Surgical Site Case Report Form Surgery Location": {
       label: "Surgery Location",
     },
+    "Risk Factors": {
+      label: "Risk Factors",
+    },
   };
