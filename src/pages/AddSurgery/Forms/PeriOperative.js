@@ -10,7 +10,6 @@ import { renderInputField } from "./DynamicFormInput";
 import { useDataEngine } from "@dhis2/app-runtime";
 import {
   formItemLayout,
-  headingStyles,
   headingStylesPERI,
   SurgicalHandStyle,
   CancelbuttonStyle,
@@ -19,7 +18,6 @@ import {
   buttonField,
   buttonStyle,
 } from "./Styles";
-import { fieldMappings } from "./fieldMappings";
 
 export default function PeriOperative() {
   const [form] = Form.useForm();

@@ -105,8 +105,6 @@ export default function PatientDetails() {
                   <Row gutter={16}>
                     <Col span={12}>{renderPatientIDField(program)}</Col>
                     <Col span={12}>{renderSecondaryIDField(program)}</Col>
-                  </Row>
-                  <Row gutter={16}>
                     <Col span={12}>{renderGender(program)}</Col>
                     <Col span={12}>{renderDateOfBirth(program)}</Col>
                   </Row>
@@ -117,12 +115,8 @@ export default function PatientDetails() {
                   <Row gutter={16}>
                     <Col span={12}>{renderDateOfAdmission(program)}</Col>
                     <Col span={12}>{renderDateOfSurgery(program)}</Col>
-                  </Row>
-                  <Row gutter={16}>
                     <Col span={12}>{renderSurgicalProcedure(program)}</Col>
                     <Col span={12}>{renderScheduling(program)}</Col>
-                  </Row>
-                  <Row gutter={16}>
                     <Col span={12}>{renderSurgeryLocation(program)}</Col>
                   </Row>
                 </div>
