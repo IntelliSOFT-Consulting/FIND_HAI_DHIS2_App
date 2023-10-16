@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   HomeOutlined as HomeIcon,
   PieChartOutlined as ChartPieIcon,
@@ -9,6 +9,9 @@ import { Menu } from "antd";
 import { createUseStyles } from "react-jss";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import routes from "../routes";
+import UseGetForms from "../hooks/useGetForms";
+import UseGetOrgUnit from "../hooks/useGetOrgUnit";
+import { useSelector } from "react-redux";
 
 const styles = createUseStyles({
   "@global": {
@@ -52,14 +55,36 @@ const items = [
   getItem("Reports", "/reports", <ArrowDownRightIcon />, null, "item"),
   getItem("Configurations", "/configurations", <Cog6ToothIcon />, null, "item"),
 ];
-const NavigationLayout = () => {
+const NavigationLayout = ({ user, program, organisationUnits }) => {
   const classes = styles();
+
+  const forms = useSelector((state) => state.forms);
+
+  const orgUnit = useSelector((state) => state.orgUnit);
+
+  const { getForms } = UseGetForms();
+
+  const { getOrgUnit } = UseGetOrgUnit();
 
   const navigate = useNavigate();
 
   const onClick = (e) => {
     navigate(e.key);
   };
+
+  useEffect(() => {
+    if (
+      !Object.keys(forms)?.length > 0 &&
+      !Object.keys(forms)?.includes("registration")
+    ) {
+      getForms();
+    }
+
+    if (!orgUnit?.id) {
+      getOrgUnit();
+    }
+  }, [forms, orgUnit]);
+
   return (
     <div className={classes.root}>
       <Menu
@@ -78,7 +103,13 @@ const NavigationLayout = () => {
             <Route
               key={route.path}
               path={route.path}
-              element={<route.component />}
+              element={
+                <route.component
+                  program={program}
+                  user={user}
+                  organisationUnits={organisationUnits}
+                />
+              }
             />
           ))}
         </Routes>

@@ -15,7 +15,7 @@ const styles = createUseStyles({
   header: {
     marginLeft: "3rem",
     color: "#012F6C",
-    gridColumn: '1/4',
+    gridColumn: "1/4",
     "& h4": {
       fontWeight: "300",
       marginBottom: "2rem",
@@ -71,25 +71,22 @@ const styles = createUseStyles({
   },
 });
 
-const links = [
-  {
-    title: "SURGERIES",
-    path: "/surgeries",
-    icon: ChartPieIcon,
-  },
-  {
-    title: "REPORTS",
-    path: "/reports",
-    icon: ArrowTopRightOnSquareIcon,
-  },
-  {
-    title: "CONFIGURATIONS",
-    path: "/configurations",
-    icon: Cog6ToothIcon,
-  },
-];
 export default function Home() {
+  const domain = window.location.origin;
+  const links = [
+    {
+      title: "REPORTS",
+      path: `${domain}/dhis-web-event-reports/index.html`,
+      icon: ArrowTopRightOnSquareIcon,
+    },
+    {
+      title: "CONFIGURATIONS",
+      path: `${domain}/dhis-web-maintenance/index.html#/list/programSection/program`,
+      icon: Cog6ToothIcon,
+    },
+  ];
   const classes = styles();
+  console.log(window.location);
   return (
     <div className={classes.container}>
       <div className={classes.links}>
@@ -97,15 +94,23 @@ export default function Home() {
           <h4>Welcome Home</h4>
           <h1>HOSPITAL ACQUIRED INFECTIONS SURVEILLANCE FORMS.</h1>
         </div>
+        <Link to="/surgeries" className={classes.linkItem}>
+          <div className={classes.iconSection}>
+            <ChartPieIcon className={classes.icon} aria-hidden="true" />
+          </div>
+          <div className={classes.title}>
+            <span>SURGERIES</span>
+          </div>
+        </Link>
         {links.map((link) => (
-          <Link to={link.path} key={link.title} className={classes.linkItem}>
+          <a href={link.path} key={link.title} className={classes.linkItem}>
             <div className={classes.iconSection}>
               <link.icon className={classes.icon} aria-hidden="true" />
             </div>
             <div className={classes.title}>
               <span>{link.title}</span>
             </div>
-          </Link>
+          </a>
         ))}
       </div>
     </div>

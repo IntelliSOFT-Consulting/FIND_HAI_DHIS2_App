@@ -1,5 +1,8 @@
 import Surgeries from "./pages/Surgeries";
-import Forms from "./pages/AddSurgery/index";
+import SurgeryForms from "./pages/SurgeryForms";
+import Register from "./pages/Register";
+import SurgeryForm from "./pages/SurgeryForm";
+import StageForm from "./pages/StageForm";
 
 const routes = [
   {
@@ -8,7 +11,30 @@ const routes = [
   },
   {
     path: "/forms",
-    component: Forms,
+    component: SurgeryForms,
+  },
+  {
+    path: "/forms/:instanceId",
+    component: SurgeryForms,
+  },
+  {
+    path: "/forms/:instanceId/:programStageId",
+  },
+  {
+    path: "/register",
+    component: Register,
+  },
+  {
+    path: "/surgery/:trackedEntityInstance/:enrollment",
+    component: SurgeryForm,
+  },
+  {
+    path: "/surgery/:stage/event/:event",
+    component: StageForm,
+  },
+  {
+    path: "/surgery/:stage/event/:event/edit",
+    component: StageForm,
   },
 ];
 

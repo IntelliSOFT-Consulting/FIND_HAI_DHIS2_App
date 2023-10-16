@@ -5,6 +5,8 @@ import NavigationLayout from "./layouts/navigationLayout";
 import Home from "./pages/Home";
 import { Routes, Route, HashRouter } from "react-router-dom";
 import { ConfigProvider } from "antd";
+import { Provider } from "react-redux";
+import store from "./redux/store";
 
 const defaultData = {
   borderRadius: 6,
@@ -18,6 +20,21 @@ const defaultData = {
 const query = {
   me: {
     resource: "me",
+  },
+  programs: {
+    resource: "programs",
+    params: {
+      fields: "id,name",
+      filter: "name:ilike:find",
+    },
+  },
+  // get the last organization unit step
+  organisationUnits: {
+    resource: "organisationUnits",
+    params: {
+      fields: "id,name",
+      filter: "level:ge:5",
+    },
   },
 };
 
@@ -48,22 +65,45 @@ const MyApp = () => (
       },
     }}
   >
-    <HashRouter>
-      <div>
-        <DataQuery query={query}>
-          {({ error, loading, data }) => {
-            if (error) return <span>ERROR</span>;
-            if (loading) return <span>...</span>;
-            return (
-              <Routes>
-                <Route path="/*" element={<NavigationLayout />} />
-                <Route path="/" element={<Home />} />
-              </Routes>
-            );
-          }}
-        </DataQuery>
-      </div>
-    </HashRouter>
+    <Provider store={store}>
+      <HashRouter>
+        <div>
+          <DataQuery query={query}>
+            {({ error, loading, data }) => {
+              if (error) return <span>ERROR</span>;
+              if (loading) return <span>...</span>;
+              return (
+                <Routes>
+                  <Route
+                    path="/*"
+                    element={
+                      <NavigationLayout
+                        program={data?.programs?.programs[0]}
+                        user={data?.me}
+                        title={i18n.t("FIND")}
+                        organisationUnits={
+                          data?.organisationUnits?.organisationUnits[0]
+                        }
+                      />
+                    }
+                  />
+                  <Route
+                    path="/"
+                    element={
+                      <Home
+                        program={data?.programs?.programs[0]}
+                        user={data?.me}
+                        title={i18n.t("FIND")}
+                      />
+                    }
+                  />
+                </Routes>
+              );
+            }}
+          </DataQuery>
+        </div>
+      </HashRouter>
+    </Provider>
   </ConfigProvider>
 );
 

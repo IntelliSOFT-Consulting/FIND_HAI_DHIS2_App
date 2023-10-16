@@ -1,9 +1,13 @@
 const config = {
-    type: 'app',
+  type: "app",
+  title: "FIND HAI",
+  name: "FIND HAI",
+  description: "FIND HAI Form",
+  version: "1.0",
 
-    entryPoints: {
-        app: './src/App.js',
-    },
-}
+  entryPoints: {
+    app: "./src/App.js",
+  },
+};
 
-module.exports = config
+module.exports = config;
