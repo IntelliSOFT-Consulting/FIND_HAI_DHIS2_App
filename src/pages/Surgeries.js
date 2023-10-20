@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
-import CardItem from "../components/CardItem";
-import { Table, Input, Button, Space, Tag } from "antd";
-import { createUseStyles } from "react-jss";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
-import { isValidDate } from "../lib/helpers";
-import { CircularLoader } from "@dhis2/ui";
+import { Input, Button, Space, Tag, Table } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
+import { CircularLoader } from "@dhis2/ui";
 import moment from "moment";
+import CardItem from "../components/CardItem";
+import { isValidDate } from "../lib/helpers";
 
 const useStyles = createUseStyles({
   search: {
@@ -25,17 +26,25 @@ const useStyles = createUseStyles({
 
 export default function Surgeries({ program, user, organisationUnits }) {
   const [instances, setInstances] = useState(null);
-  const [tableColumns, setColumns] = useState([]);
   const styles = useStyles();
-
   const navigate = useNavigate();
-
   const engine = useDataEngine();
+  const { registration } = useSelector((state) => state.forms);
+
+  useEffect(() => {
+    getSurgeries();
+  }, []);
 
   const getSurgeries = async (query = "") => {
+    const dataElementIds = registration?.sections?.flatMap((section) => {
+      return section?.dataElements?.filter((dataElement) => {
+        return dataElement?.name === "Secondary ID" || dataElement?.name === "Patient ID";
+      });
+    });
+
     query = query?.trim();
-    const filter = query ? `filter=US1gCMCXtGq:ilike:${query}OR` : "";
-    const { events } = await engine.query({
+
+    const options = {
       events: {
         resource: `trackedEntityInstances.json`,
         params: {
@@ -49,13 +58,58 @@ export default function Surgeries({ program, user, organisationUnits }) {
           ouMode: "ALL",
           program: program?.id,
           pageSize: 1000,
+
         },
       },
-    });
+    };
 
+    if (query) {
+      const results = await Promise.all(
+        dataElementIds?.map(async (dataElement) => {
+          const filterQuery = query
+            ? {
+                filter: `${dataElement?.id}:ILIKE:${query}`,
+              }
+            : {};
+          const { events } = await engine.query({
+            ...options,
+            events: {
+              ...options.events,
+              params: {
+                ...options.events.params,
+                ...filterQuery,
+              },
+            },
+          });
+
+          const trackedEntityInstances = events?.trackedEntityInstances;
+
+          const enrollments = trackedEntityInstances?.flatMap((instance) => {
+            return instance?.enrollments?.map((enrollment) => {
+              return {
+                ...enrollment,
+                trackedEntityType: instance?.trackedEntityType,
+                trackedEntityInstance: instance?.trackedEntityInstance,
+              };
+            });
+          });
+          return enrollments?.filter(
+            (enrollment, index, self) =>
+              index ===
+              self.findIndex(
+                (t) =>
+                  t.trackedEntityInstance === enrollment.trackedEntityInstance
+              )
+          );
+        })
+      );
+      const enrollments = results?.flatMap((result) => result);
+      setInstances(enrollments);
+      return enrollments;
+    }
+
+    const { events } = await engine.query(options);
     const trackedEntityInstances = events?.trackedEntityInstances;
-
-    console.log("trackedEntityInstances", trackedEntityInstances);
 
     const enrollments = trackedEntityInstances?.flatMap((instance) => {
       return instance?.enrollments?.map((enrollment) => {
@@ -67,14 +121,28 @@ export default function Surgeries({ program, user, organisationUnits }) {
       });
     });
 
-    if (enrollments) {
-      setInstances(enrollments);
-    }
+    setInstances(enrollments);
+    return enrollments;
   };
 
-  useEffect(() => {
-    getSurgeries();
-  }, []);
+  const debounce = (func, wait) => {
+    let timeout;
+    return function (...args) {
+      const context = this;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  };
+
+  const getSurgeriesDebounced = debounce(getSurgeries, 400);
+
+  const renderDate = (text) => {
+    return isValidDate(text) ? moment(text).format("DD MMM YYYY") : text;
+  };
+
+  const renderStatus = (text) => (
+    <Tag color={text === "ACTIVE" ? "green" : "default"}>{text}</Tag>
+  );
 
   const columns = [
     {
@@ -91,22 +159,13 @@ export default function Surgeries({ program, user, organisationUnits }) {
       title: "Date of Surgery",
       dataIndex: "Date of Surgery",
       key: "Date of Surgery",
-      render: (text) => {
-        if (isValidDate(text)) {
-          return moment(text).format("DD MMM YYYY");
-        }
-        return text;
-      },
+      render: renderDate,
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
-      render: (text) => {
-        return (
-          <Tag color={text === "ACTIVE" ? "green" : "default"}>{text}</Tag>
-        );
-      },
+      render: renderStatus,
     },
     {
       title: "Surgery Location",
@@ -122,9 +181,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
           <Button
             type="link"
             onClick={() =>
-              navigate(
-                `/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`
-              )
+              navigate(`/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`)
             }
           >
             View
@@ -134,16 +191,6 @@ export default function Surgeries({ program, user, organisationUnits }) {
     },
   ];
 
-  // const debounce = (func, wait) => {
-  //   let timeout;
-  //   return function (...args) {
-  //     const context = this;
-  //     clearTimeout(timeout);
-  //     timeout = setTimeout(() => func.apply(context, args), wait);
-  //   };
-  // };
-
-  // const getSurgeriesDebounced = debounce(getSurgeries, 400);
   return (
     <CardItem title="SURGERIES">
       <div className={styles.addButton}>
@@ -161,8 +208,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
           size="large"
           enterButton="Search"
           allowClear
-          // onSearch={(value) => getSurgeries(value)}
-          // onChange={(e) => getSurgeriesDebounced(e.target.value)}
+          onChange={(e) => getSurgeriesDebounced(e.target.value)}
         />
       </div>
       {!instances ? (
@@ -186,20 +232,14 @@ export default function Surgeries({ program, user, organisationUnits }) {
               status: instance?.status,
             };
           })}
-          pagination={
-            instances?.length > 10
-              ? {
-                  pageSize: 10,
-                }
-              : false
-          }
+          pagination={instances?.length > 10 ? { pageSize: 10 } : false}
+          rowKey={(record) => record?.trackedEntityInstance}
           bordered
           size="small"
           locale={{
             emptyText: (
               <div>
                 <p>No Results. Add patient & surgery details</p>
-
                 <Button type="primary" onClick={() => navigate("/register")}>
                   ADD
                 </Button>

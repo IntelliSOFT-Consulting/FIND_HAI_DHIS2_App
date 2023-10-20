@@ -19,6 +19,7 @@
     "@dhis2/app-runtime": "^3.9.4",
     "@dhis2/ui": "^8.14.4",
     "@heroicons/react": "^2.0.18",
+    "acorn": "^8.10.0",
     "antd": "^5.9.1",
     "dayjs": "^1.11.10",
     "moment": "^2.29.4",
