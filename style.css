@@ -43,7 +43,7 @@
 }
 
 #bannerArea {
-  background: url(https://nacare.ncikenya.or.ke/api/staticContent/logo_front);
+  background: url();
   background-size: contain;
   background-repeat: no-repeat;
   margin: 2rem auto;

@@ -38,7 +38,10 @@ export default function Surgeries({ program, user, organisationUnits }) {
   const getSurgeries = async (query = "") => {
     const dataElementIds = registration?.sections?.flatMap((section) => {
       return section?.dataElements?.filter((dataElement) => {
-        return dataElement?.name === "Secondary ID" || dataElement?.name === "Patient ID";
+        return (
+          dataElement?.name === "Secondary ID" ||
+          dataElement?.name === "Patient ID"
+        );
       });
     });
 
@@ -57,8 +60,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
           order: "created:desc",
           ouMode: "ALL",
           program: program?.id,
-          pageSize: 1000,
-
+          pageSize: 500,
         },
       },
     };
@@ -181,7 +183,9 @@ export default function Surgeries({ program, user, organisationUnits }) {
           <Button
             type="link"
             onClick={() =>
-              navigate(`/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`)
+              navigate(
+                `/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`
+              )
             }
           >
             View

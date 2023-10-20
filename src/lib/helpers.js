@@ -40,7 +40,7 @@ const formatAttributeValues = (attributes) => {
 
   const attributeValuesObject = attributeValues.reduce(
     (acc, attributeValue) => {
-      acc[attributeValue.name] = attributeValue.value;
+      acc[attributeValue.name?.toLowerCase()] = attributeValue.value;
       return acc;
     },
     {}
@@ -60,7 +60,7 @@ export function formatRegistration(program) {
             name: attribute.name,
             id: attribute.id,
             valueType: attribute.valueType,
-            compulsory: !attribute.name?.includes("specify"),
+            // compulsory: !attribute.name?.includes("specify"),
             optionSet: attribute.optionSet,
             ...formatAttributeValues(attribute.attributeValues),
           };

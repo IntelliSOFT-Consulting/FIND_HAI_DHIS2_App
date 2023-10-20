@@ -143,6 +143,15 @@ export default function StageForm() {
                           ? "checked"
                           : "value"
                       }
+                      rules={[
+                        {
+                          required: dataElement?.required,
+                          message: `Please enter ${dataElement.name}`,
+                        },
+                        dataElement?.validator
+                        ? { validator: eval(dataElement.validator) }
+                        : null,
+                      ]}
                     >
                       <InputItem
                         type={

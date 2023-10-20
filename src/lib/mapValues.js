@@ -28,7 +28,7 @@ export const formatValues = (form, dataValues) => {
           id: dataElement.id,
           name: dataElement.name,
           valueType: dataElement.valueType,
-          compulsory: dataElement.compulsory,
+          required: dataElement.compulsory,
           optionSet: dataElement.optionSet,
           value: dataValue?.value,
         };

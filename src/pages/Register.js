@@ -11,6 +11,14 @@ import { useNavigate } from "react-router-dom";
 import UseFindPatientInstance from "../hooks/useFindPatientInstance";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import { generateId } from "../lib/helpers";
+import dayjs from "dayjs";
+import localeData from "dayjs/plugin/localeData";
+import weekday from "dayjs/plugin/weekday";
+
+dayjs.extend(weekday);
+dayjs.extend(localeData);
+
+const dateFormat = "YYYY-MM-DD";
 
 const useStyles = createUseStyles({
   form: {
@@ -160,9 +168,12 @@ export default function Register() {
                   name={dataElement.id}
                   rules={[
                     {
-                      required: dataElement.compulsory,
+                      required: dataElement.required,
                       message: `Please input ${dataElement.displayName}!`,
                     },
+                    dataElement?.validator
+                      ? { validator: eval(dataElement.validator) }
+                      : null,
                   ]}
                 >
                   <InputItem
