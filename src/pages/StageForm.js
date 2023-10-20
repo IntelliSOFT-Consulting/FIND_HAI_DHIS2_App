@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Form, Tooltip } from "antd";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import { isValidDate } from "../lib/helpers";
@@ -41,12 +41,14 @@ const dateFormat = "YYYY-MM-DD";
 export default function StageForm() {
   const [formValues, setFormValues] = useState(null);
   const [status, setStatus] = useState(null);
+  const [surgeryLink, setSurgeryLink] = useState(null);
   const { stages, trackedEntity, program } = useSelector(
     (state) => state.forms
   );
   const { id } = useSelector((state) => state.orgUnit);
 
   const classes = useStyles();
+  const navigate = useNavigate();
 
   const [form] = Form.useForm();
 
@@ -80,12 +82,16 @@ export default function StageForm() {
     );
     if (result) {
       setStatus((prev) => (prev === "COMPLETED" ? "ACTIVE" : "COMPLETED"));
+      navigate(surgeryLink);
     }
   };
 
   const fetchValues = async () => {
     const data = await getEvent(event);
     setStatus(data?.status);
+    setSurgeryLink(
+      `/surgery/${data?.trackedEntityInstance}/${data?.enrollment}`
+    );
     const values = data?.dataValues?.reduce((acc, curr) => {
       acc[curr.id] = isValidDate(curr.value)
         ? dayjs(curr.value, dateFormat)
@@ -152,7 +158,7 @@ export default function StageForm() {
                         )}
                         placeholder={`Enter ${dataElement.name}`}
                         name={dataElement.id}
-                        defaultValue={form.getFieldValue(dataElement.id)}
+                        defaultValue={formValues[dataElement.id]}
                         disabled={status === "COMPLETED"}
                       />
                     </Form.Item>

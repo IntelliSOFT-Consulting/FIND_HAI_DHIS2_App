@@ -2,6 +2,7 @@ import Surgeries from "./pages/Surgeries";
 import Register from "./pages/Register";
 import SurgeryForm from "./pages/SurgeryForm";
 import StageForm from "./pages/StageForm";
+import ViewStage from "./pages/ViewStage";
 
 const routes = [
   {
@@ -26,6 +27,10 @@ const routes = [
   {
     path: "/surgery/:stage/event/:event/edit",
     component: StageForm,
+  },
+  {
+    path: "/surgery/:stage/event/:event/view",
+    component: ViewStage,
   },
 ];
 
