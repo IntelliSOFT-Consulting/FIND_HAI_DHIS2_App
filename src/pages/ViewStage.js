@@ -88,7 +88,6 @@ export default function ViewStage() {
         {stageForm?.sections?.map((section) => (
           <React.Fragment key={section.id}>
             <Section title={section.title} />
-
             <Table
               columns={columns}
               dataSource={section?.dataElements?.map((dataElement) => ({

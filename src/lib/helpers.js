@@ -55,12 +55,12 @@ export function formatRegistration(program) {
     sections: program?.programSections?.map((section) => {
       return {
         title: section.name,
+        description: section.description,
         dataElements: section.trackedEntityAttributes.map((attribute) => {
           return {
             name: attribute.name,
             id: attribute.id,
             valueType: attribute.valueType,
-            // compulsory: !attribute.name?.includes("specify"),
             optionSet: attribute.optionSet,
             ...formatAttributeValues(attribute.attributeValues),
           };
@@ -76,9 +76,12 @@ export function formatSurgery(program) {
       title: stage.name,
       enrollment: false,
       id: stage.id,
+      repeatable: stage.repeatable,
+      ...formatAttributeValues(stage.attributeValues),
       sections: stage.programStageSections.map((section) => {
         return {
           title: section.displayName,
+          repeating: section.description === 'repeating',
           dataElements: section.dataElements.map((dataElement) => {
             return {
               name: dataElement.displayName,
@@ -120,4 +123,18 @@ export function isValidDate(dateString) {
 
   const regEx = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$/;
   return dateString.match(regEx) != null;
+}
+
+
+export function statusColor(status) {
+  switch (status) {
+    case "ACTIVE":
+      return "cyan";
+    case "COMPLETED":
+      return "purple";
+    case "CANCELLED":
+      return "red";
+    default:
+      return "grey";
+  }
 }

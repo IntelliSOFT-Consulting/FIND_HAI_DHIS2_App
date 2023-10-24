@@ -21,15 +21,15 @@ const routes = [
     component: SurgeryForm,
   },
   {
-    path: "/surgery/:stage/event/:event",
+    path: "/surgery/:stage/enrollment/:enrollment/tei/:trackedEntityInstance",
     component: StageForm,
   },
   {
-    path: "/surgery/:stage/event/:event/edit",
+    path: "/surgery/:stage/enrollment/:enrollment/tei/:trackedEntityInstance/edit",
     component: StageForm,
   },
   {
-    path: "/surgery/:stage/event/:event/view",
+    path: "/surgery/:stage/enrollment/:enrollment/tei/:trackedEntityInstance/view",
     component: ViewStage,
   },
 ];
