@@ -7,9 +7,9 @@ export default function UseFindPatientInstance() {
   const findPatientInstance = async (attribute, value, ou, program) => {
     try {
       const params = {};
-      if(attribute && value) {
+      if (attribute && value) {
         params.filter = `${attribute}:EQ:${value}`;
-      };
+      }
       const { trackedEntityInstances } = await engine.query({
         trackedEntityInstances: {
           resource: "trackedEntityInstances.json",
@@ -17,8 +17,7 @@ export default function UseFindPatientInstance() {
             ou,
             program,
             ouMode: "ACCESSIBLE",
-            fields:
-              "trackedEntityInstance,trackedEntityType,attributes[attribute,value],enrollments[*]",
+            fields: "trackedEntityInstance,trackedEntityType,attributes[attribute,value],enrollments[*]",
             ...params,
           },
         },

@@ -1,10 +1,6 @@
 import React from "react";
 import { createUseStyles } from "react-jss";
-import {
-  ChartPieIcon,
-  ArrowTopRightOnSquareIcon,
-  Cog6ToothIcon,
-} from "@heroicons/react/24/solid";
+import { ChartPieIcon, ArrowTopRightOnSquareIcon, Cog6ToothIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 
 const styles = createUseStyles({
@@ -86,7 +82,7 @@ export default function Home() {
     },
   ];
   const classes = styles();
-  console.log(window.location);
+
   return (
     <div className={classes.container}>
       <div className={classes.links}>

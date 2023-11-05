@@ -122,9 +122,7 @@ const Forms = ({
       getInstances();
       setSuccess("Successfully saved");
 
-      const instance = payload.trackedEntityType
-        ? response?.response?.importSummaries[0]?.reference
-        : instanceId;
+      const instance = payload.trackedEntityType ? response?.response?.importSummaries[0]?.reference : instanceId;
       if (instance) {
         navigate(`/forms/${instance}`);
       }
@@ -195,19 +193,13 @@ const Forms = ({
                         ]}
                       >
                         <InputItem
-                          type={
-                            dataElement?.optionSet
-                              ? "SELECT"
-                              : dataElement.valueType
-                          }
-                          options={dataElement?.optionSet?.options?.map(
-                            (option) => {
-                              return {
-                                label: option.displayName,
-                                value: option.code,
-                              };
-                            }
-                          )}
+                          type={dataElement?.optionSet ? "SELECT" : dataElement.valueType}
+                          options={dataElement?.optionSet?.options?.map((option) => {
+                            return {
+                              label: option.displayName,
+                              value: option.code,
+                            };
+                          })}
                           size="large"
                           placeholder={`Enter ${dataElement.name}`}
                         />

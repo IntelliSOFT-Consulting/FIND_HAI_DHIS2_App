@@ -5,7 +5,7 @@ import {
   ArrowDownOutlined as ArrowDownRightIcon,
   SettingOutlined as Cog6ToothIcon,
 } from "@ant-design/icons";
-import { Menu } from "antd";
+import { Menu, Layout } from "antd";
 import { createUseStyles } from "react-jss";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import routes from "../routes";
@@ -13,15 +13,20 @@ import UseGetForms from "../hooks/useGetForms";
 import UseGetOrgUnit from "../hooks/useGetOrgUnit";
 import { useSelector } from "react-redux";
 
+const { Content, Sider } = Layout;
+
 const styles = createUseStyles({
   "@global": {
-    ".ant-menu": {
-      minHeight: "calc(100vh - 48px) !important",
+    ".ant-layout-sider": {
       position: "fixed",
+      background: "white !important",
+    },
+    ".ant-layout-sider-zero-width-trigger": {
+      background: "#2C6693 !important",
+      top: "74px !important",
     },
     ".ant-menu-item": {
       borderBottom: "1px solid #f0f0f0",
-      width: "100% !important",
       marginBlock: "0px !important",
       padding: "24px !important",
       "&:hover": {
@@ -32,10 +37,10 @@ const styles = createUseStyles({
   },
   content: {
     padding: "24px",
-    marginLeft: "256px",
     overflow: "auto",
     backgroundColor: "#FAFAFA",
     minHeight: "calc(100vh - 48px)",
+    width: "100%",
   },
 });
 
@@ -73,10 +78,7 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
   };
 
   useEffect(() => {
-    if (
-      !Object.keys(forms)?.length > 0 &&
-      !Object.keys(forms)?.includes("registration")
-    ) {
+    if (!Object.keys(forms)?.length > 0 && !Object.keys(forms)?.includes("registration")) {
       getForms();
     }
 
@@ -86,35 +88,32 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
   }, [forms, orgUnit]);
 
   return (
-    <div className={classes.root}>
-      <Menu
-        onClick={onClick}
-        style={{
-          width: 256,
+    <Layout>
+      <Sider
+        breakpoint="lg"
+        collapsedWidth="0"
+        onBreakpoint={(broken) => {
+          console.log(broken);
         }}
-        defaultSelectedKeys={["1"]}
-        defaultOpenKeys={["/"]}
-        mode="inline"
-        items={items}
-      />
-      <div className={classes.content}>
+        onCollapse={(collapsed, type) => {
+          console.log(collapsed, type);
+        }}
+      >
+        <Menu onClick={onClick} defaultSelectedKeys={["1"]} defaultOpenKeys={["/"]} mode="inline" items={items} />
+      </Sider>
+
+      <Content className={classes.content}>
         <Routes>
           {routes.map((route) => (
             <Route
               key={route.path}
               path={route.path}
-              element={
-                <route.component
-                  program={program}
-                  user={user}
-                  organisationUnits={organisationUnits}
-                />
-              }
+              element={<route.component program={program} user={user} organisationUnits={organisationUnits} />}
             />
           ))}
         </Routes>
-      </div>
-    </div>
+      </Content>
+    </Layout>
   );
 };
 export default NavigationLayout;

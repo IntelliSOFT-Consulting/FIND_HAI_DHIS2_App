@@ -4,9 +4,7 @@ export const formatValues = (form, dataValues) => {
       return {
         ...section,
         dataElements: section?.dataElements?.map((dataElement) => {
-          const dataValue = dataValues?.attributes?.find(
-            (attribute) => attribute.attribute === dataElement.id
-          );
+          const dataValue = dataValues?.attributes?.find((attribute) => attribute.attribute === dataElement.id);
           return {
             id: dataElement.id,
             name: dataElement.name,
@@ -21,9 +19,7 @@ export const formatValues = (form, dataValues) => {
     return {
       ...section,
       dataElements: section?.dataElements?.map((dataElement) => {
-        const dataValue = dataValues?.dataValues?.find(
-          (dataValue) => dataValue.dataElement === dataElement.id
-        );
+        const dataValue = dataValues?.dataValues?.find((dataValue) => dataValue.dataElement === dataElement.id);
         return {
           id: dataElement.id,
           name: dataElement.name,

@@ -4,14 +4,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 export default function UseCompleteEvent() {
   const engine = useDataEngine();
 
-  const completeEvent = async (
-    event,
-    orgUnit,
-    program,
-    programStage,
-    dataValues,
-    status
-  ) => {
+  const completeEvent = async (event, orgUnit, program, programStage, dataValues, status) => {
     try {
       const response = await engine.mutate({
         resource: `events/${event}`,

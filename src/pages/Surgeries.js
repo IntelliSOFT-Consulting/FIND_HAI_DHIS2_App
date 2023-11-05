@@ -38,10 +38,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
   const getSurgeries = async (query = "") => {
     const dataElementIds = registration?.sections?.flatMap((section) => {
       return section?.dataElements?.filter((dataElement) => {
-        return (
-          dataElement?.name === "Secondary ID" ||
-          dataElement?.name === "Patient ID"
-        );
+        return dataElement?.name === "Secondary ID" || dataElement?.name === "Patient ID";
       });
     });
 
@@ -51,12 +48,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
       events: {
         resource: `trackedEntityInstances.json`,
         params: {
-          fields: [
-            "trackedEntityInstance",
-            "trackedEntityType",
-            "attributes[attribute,value]",
-            "enrollments[*]",
-          ],
+          fields: ["trackedEntityInstance", "trackedEntityType", "attributes[attribute,value]", "enrollments[*]"],
           order: "created:desc",
           ouMode: "ALL",
           program: program?.id,
@@ -97,11 +89,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
           });
           return enrollments?.filter(
             (enrollment, index, self) =>
-              index ===
-              self.findIndex(
-                (t) =>
-                  t.trackedEntityInstance === enrollment.trackedEntityInstance
-              )
+              index === self.findIndex((t) => t.trackedEntityInstance === enrollment.trackedEntityInstance)
           );
         })
       );
@@ -143,7 +131,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
   };
 
   const renderStatus = (text) => (
-    <Tag color={text === "ACTIVE" ? "green" : "default"}>{text}</Tag>
+    <Tag color={text === "ACTIVE" ? "green" : "default"}>{text === "CANCELLED" ? "CLOSED" : text}</Tag>
   );
 
   const columns = [
@@ -180,14 +168,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
       key: "Actions",
       render: (text, record) => (
         <Space size="middle">
-          <Button
-            type="link"
-            onClick={() =>
-              navigate(
-                `/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`
-              )
-            }
-          >
+          <Button type="link" onClick={() => navigate(`/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`)}>
             View
           </Button>
         </Space>
@@ -198,11 +179,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
   return (
     <CardItem title="SURGERIES">
       <div className={styles.addButton}>
-        <Button
-          type="primary"
-          onClick={() => navigate("/register")}
-          icon={<PlusOutlined />}
-        >
+        <Button type="primary" onClick={() => navigate("/register")} icon={<PlusOutlined />}>
           Register new surgery
         </Button>
       </div>
@@ -250,6 +227,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
               </div>
             ),
           }}
+          scroll={{ x: 700 }}
         />
       )}
     </CardItem>

@@ -15,12 +15,7 @@ export default function UseGetEvent() {
         ...data,
         dataValues: data?.dataValues?.map((dataValue) => ({
           id: dataValue?.dataElement,
-          value:
-            dataValue?.value === "true"
-              ? true
-              : dataValue?.value === "false"
-              ? false
-              : dataValue?.value,
+          value: dataValue?.value === "true" ? true : dataValue?.value === "false" ? false : dataValue?.value,
         })),
       };
     } catch (error) {

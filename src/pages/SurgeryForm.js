@@ -11,6 +11,9 @@ import moment from "moment";
 import { createUseStyles } from "react-jss";
 import { PlusOutlined } from "@ant-design/icons";
 import { statusColor } from "../lib/helpers";
+import { CircularLoader } from "@dhis2/ui";
+import Overdue from "../components/Overdue";
+import { getFullEvents, isAddStageActive } from "../lib/stages";
 
 const useStyles = createUseStyles({
   header: {
@@ -37,9 +40,9 @@ const useStyles = createUseStyles({
 export default function SurgeryForm() {
   const [enrollmentData, setEnrollmentData] = useState(null);
   const [formValues, setFormValues] = useState(null);
-  const { registration, stages, trackedEntity, program } = useSelector(
-    (state) => state.forms
-  );
+  const [showOverdue, setShowOverdue] = useState(false);
+
+  const { registration, stages, trackedEntity, program } = useSelector((state) => state.forms);
 
   const classes = useStyles();
 
@@ -51,18 +54,18 @@ export default function SurgeryForm() {
   const { updateEnrollment } = UseUpdateEnrollment();
 
   const getEnrollment = async () => {
-    const data = await getEnrollmentData(trackedEntityInstance, enrollment);
+    const data = await getEnrollmentData();
     setEnrollmentData(data);
     const enrollmentValues = formatValues(registration, data);
     const stagesValues = stages?.map((stage) => {
-      const stageValues = data?.events?.filter(
-        (event) => event.programStage === stage.id
-      );
+      const stageValues = data?.events?.filter((event) => event.programStage === stage.id);
 
       return {
         ...stage,
         events: stageValues?.map((stageValue) => {
           return {
+            repeatable: stage?.repeatable,
+            repeattype: stage?.repeattype,
             ...(stageValue?.dataValues?.length > 0
               ? stageValue
               : {
@@ -114,50 +117,37 @@ export default function SurgeryForm() {
       title: "Actions",
       dataIndex: "actions",
       key: "actions",
-      render: (text, record) => (
-        <div>
-          <Link
-            to={`/surgery/${record.programStage}/enrollment/${enrollment}/tei/${trackedEntityInstance}/view`}
-          >
-            <Button type="link">View</Button>
-          </Link>
-          {enrollmentData?.status === "ACTIVE" && (
-            <Link
-              to={`/surgery/${record.programStage}/enrollment/${enrollment}/tei/${trackedEntityInstance}/edit`}
-            >
-              <Button type="link">Edit</Button>
+      render: (text, record) => {
+        const params = record?.repeatable && record?.repeattype !== "section" ? `?event=${record?.event}` : "";
+        return (
+          <div>
+            <Link to={`/surgery/${record.programStage}/enrollment/${enrollment}/tei/${trackedEntityInstance}/view${params}`}>
+              <Button type="link">View</Button>
             </Link>
-          )}
-        </div>
-      ),
+            {enrollmentData?.status === "ACTIVE" && (
+              <Link to={`/surgery/${record.programStage}/enrollment/${enrollment}/tei/${trackedEntityInstance}/edit${params}`}>
+                <Button type="link">Edit</Button>
+              </Link>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
-  const addEvent = async (stage, isNew = false) => {
-    const emptyEvent = stage?.events?.find(
-      (event) => event?.dataValues?.length === 0
-    )?.event;
+  const addEvent = async (stage) => {
+    const emptyEvent = stage?.events?.find((event) => event?.dataValues?.length === 0 || !event?.dataValues)?.event;
+
+    let params = "";
 
     if (emptyEvent) {
-      return navigate(
-        `/surgery/${stage.id}/enrollment/${enrollment}/tei/${trackedEntityInstance}`
-      );
+      params = stage?.repeatable && stage?.repeattype !== "section" ? `?event=${emptyEvent}` : "";
+      return navigate(`/surgery/${stage.id}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
-    const eventData = {
-      program,
-      programStage: stage.id,
-      trackedEntityInstance,
-      enrollment,
-      orgUnit: enrollmentData?.orgUnit,
-      status: "ACTIVE",
-      eventDate: moment().format("YYYY-MM-DD"),
-      dataValues: [],
-    };
-    const event = await createEvent({ events: [eventData] });
+    const event = await createEvent(stage.id);
     if (event) {
-      navigate(
-        `/surgery/${stage.id}/enrollment/${enrollment}/tei/${trackedEntityInstance}`
-      );
+      params = stage?.repeatable && stage?.repeattype !== "section" ? `?event=${event}` : "";
+      navigate(`/surgery/${stage.id}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
   };
 
@@ -165,20 +155,6 @@ export default function SurgeryForm() {
     return events?.every((event) => {
       return !event || !event?.dataValues || event?.dataValues?.length === 0;
     });
-  };
-
-  const isAddStageActive = (stage) => {
-    const events = stage?.events?.filter(
-      (event) => event?.dataValues?.length > 0
-    );
-    return (
-      stage?.repeatable &&
-      (!stage?.repeattype ||
-        (stage?.repeattype && stage?.repeattype !== "section")) &&
-      events?.length > 0 &&
-      events?.length < 3 &&
-      enrollmentData?.status === "ACTIVE"
-    );
   };
 
   const checkIfOverdue = async () => {
@@ -192,15 +168,30 @@ export default function SurgeryForm() {
         const today = moment();
         const diff = today.diff(date, "weeks");
         if (diff > 6 && enrollmentData?.status !== "CANCELLED") {
-          const updatedEnrollmentData = {
-            ...enrollmentData,
-            status: "CANCELLED",
-          };
-          delete updatedEnrollmentData?.events;
-          await updateEnrollment(enrollment, updatedEnrollmentData);
-          getEnrollment();
+          setShowOverdue(true);
+        } else {
+          setShowOverdue(false);
         }
       }
+    }
+  };
+
+  const handleOverdue = async (values, stage) => {
+    const payload = Object.keys(values).map((key) => ({
+      dataElement: key,
+      value: values[key],
+    }));
+
+    const event = await createEvent(stage, payload);
+    if (event) {
+      const updatedEnrollmentData = {
+        ...enrollmentData,
+        status: "CANCELLED",
+      };
+      delete updatedEnrollmentData?.events;
+
+      await updateEnrollment(enrollment, updatedEnrollmentData);
+      getEnrollment();
     }
   };
 
@@ -209,67 +200,50 @@ export default function SurgeryForm() {
   }, [formValues]);
 
   return (
-    <div>
-      <Badge.Ribbon
-        text={enrollmentData?.status}
-        color={statusColor(enrollmentData?.status)}
-      >
-        <Section
-          title={<h3>Status: {enrollmentData?.status}</h3>}
-          primary
-          padded
-        />
-      </Badge.Ribbon>
-      {formValues?.enrollmentValues?.map((section, index) => (
-        <>
-          <Section title={section.title} key={index} padded />
-          <Table
-            columns={columns}
-            dataSource={section.dataElements}
-            pagination={false}
-            rowKey={(record) => record.id}
-            size="small"
-            showHeader={false}
-            bordered
-          />
-        </>
-      ))}
-      {formValues?.stagesValues?.map((stage, index) => (
-        <div className={classes.section}>
-          <Section
-            title={
-              <div className={classes.header}>
-                {stage.title}
-                {checkIfEventEmpty(stage?.events) &&
-                  enrollmentData?.status === "ACTIVE" && (
-                    <div onClick={() => addEvent(stage)}>
-                      <Button type="primary">Add</Button>
-                    </div>
-                  )}
-              </div>
-            }
-            key={index}
-          />
-          {stage?.repeattype === "section"
-            ? stage?.events?.slice(0, 1)?.map((event, i) => (
-                <div className={classes.event}>
-                  <Table
-                    key={i}
-                    columns={stageColumns}
-                    dataSource={[event]}
-                    pagination={false}
-                    rowKey={(record) => record.id}
-                    size="small"
-                    bordered
-                  />
-                </div>
-              ))
-            : stage?.events?.map(
-                (event, i) =>
-                  event?.dataValues && (
-                    <div className={classes.event}>
+    <>
+      {!formValues ? (
+        <CircularLoader />
+      ) : (
+        <div>
+          <Badge.Ribbon
+            text={enrollmentData?.status !== "ACTIVE" ? "CLOSED" : "ACTIVE"}
+            color={statusColor(enrollmentData?.status)}
+          >
+            <Section title={<h3>Status: {enrollmentData?.status}</h3>} primary padded />
+          </Badge.Ribbon>
+          {formValues?.enrollmentValues?.map((section, index) => (
+            <>
+              <Section title={section.title} key={index} padded />
+              <Table
+                columns={columns}
+                dataSource={section.dataElements}
+                pagination={false}
+                rowKey={(record) => record.id}
+                size="small"
+                showHeader={false}
+                bordered
+              />
+            </>
+          ))}
+          {formValues?.stagesValues?.map((stage, index) => (
+            <div className={classes.section} key={index}>
+              {console.log("stage: ", stage)}
+              <Section
+                title={
+                  <div className={classes.header}>
+                    {stage.title}
+                    {checkIfEventEmpty(stage?.events) && enrollmentData?.status === "ACTIVE" && (
+                      <div onClick={() => addEvent(stage)}>
+                        <Button type="primary">Add</Button>
+                      </div>
+                    )}
+                  </div>
+                }
+              />
+              {stage?.repeattype === "section"
+                ? stage?.events?.slice(0, 1)?.map((event, i) => (
+                    <div className={classes.event} key={i}>
                       <Table
-                        key={i}
                         columns={stageColumns}
                         dataSource={[event]}
                         pagination={false}
@@ -278,26 +252,40 @@ export default function SurgeryForm() {
                         bordered
                       />
                     </div>
-                  )
-              )}
+                  ))
+                : getFullEvents(stage)?.events?.map(
+                    (event, i) =>
+                      event?.dataValues && (
+                        <div className={classes.event} key={i}>
+                          <Table
+                            columns={stageColumns}
+                            dataSource={[event]}
+                            pagination={false}
+                            rowKey={(record) => record.id}
+                            size="small"
+                            bordered
+                          />
+                        </div>
+                      )
+                  )}
 
-          {isAddStageActive(stage) && (
-            <div className={classes.newEvent}>
-              <Button
-                onClick={() => addEvent(stage, true, stage?.events[0]?.event)}
-                type="dashed"
-                icon={<PlusOutlined />}
-                block
-              >
-                Add{" "}
-                {stage?.title?.toLowerCase()?.includes("pathogen information")
-                  ? "Pathogen Information"
-                  : "Stage"}
-              </Button>
+              {isAddStageActive(stage, enrollmentData) && (
+                <div className={classes.newEvent}>
+                  <Button
+                    onClick={() => addEvent(stage)}
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    block
+                  >
+                    Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
-      ))}
-    </div>
+      )}
+      <Overdue overdue={showOverdue} setOverdue={setShowOverdue} onFinish={handleOverdue} />
+    </>
   );
 }

@@ -33,9 +33,7 @@ const useStyles = createUseStyles({
 
 export default function Register() {
   const [error, setError] = useState(null);
-  const { registration, trackedEntityType, program } = useSelector(
-    (state) => state.forms
-  );
+  const { registration, trackedEntityType, program } = useSelector((state) => state.forms);
   const { id } = useSelector((state) => state.orgUnit);
   const classes = useStyles();
   const engine = useDataEngine();
@@ -67,9 +65,7 @@ export default function Register() {
             }));
           });
 
-          const dataElement = dataElements?.find(
-            (dataElement) => dataElement.id === attribute
-          );
+          const dataElement = dataElements?.find((dataElement) => dataElement.id === attribute);
 
           return {
             attribute,
@@ -93,9 +89,7 @@ export default function Register() {
   const uniqueId = generateId();
   useEffect(() => {
     if (dataElements?.length === 0) return;
-    const secondaryIdField = dataElements?.find(
-      (dataElement) => dataElement.name === "Secondary ID"
-    );
+    const secondaryIdField = dataElements?.find((dataElement) => dataElement.name === "Secondary ID");
 
     const secondaryId = form.getFieldValue(secondaryIdField?.id);
 
@@ -134,15 +128,9 @@ export default function Register() {
       });
 
       if (response?.status === "SUCCESS") {
-        const trackedEntityInstance = await getEnrollmentData(
-          response?.importSummaries[0]?.reference,
-          null,
-          true
-        );
-        console.log("trackedEntityInstance", trackedEntityInstance);
-        navigate(
-          `/surgery/${response?.importSummaries[0]?.reference}/${trackedEntityInstance?.enrollment}`
-        );
+        const trackedEntityInstance = await getEnrollmentData(response?.importSummaries[0]?.reference, true);
+
+        navigate(`/surgery/${response?.importSummaries[0]?.reference}/${trackedEntityInstance?.enrollment}`);
       }
     } catch (error) {
       const conflicts = getConflicts(error?.details, registration);
@@ -150,13 +138,8 @@ export default function Register() {
     }
   };
   return (
-    <CardItem title="REGISTER PATIENT">
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={onFinish}
-        autoComplete="off"
-      >
+    <CardItem title="REGISTER NEW PATIENT SURGERY">
+      <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
         {registration?.sections?.map((section) => (
           <>
             <Section key={section.title} title={section.title} />
@@ -171,15 +154,11 @@ export default function Register() {
                       required: dataElement.required,
                       message: `Please input ${dataElement.displayName}!`,
                     },
-                    dataElement?.validator
-                      ? { validator: eval(dataElement.validator) }
-                      : null,
+                    dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
                   ]}
                 >
                   <InputItem
-                    type={
-                      dataElement.optionSet ? "SELECT" : dataElement.valueType
-                    }
+                    type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
                     options={dataElement.optionSet?.options?.map((option) => ({
                       label: option.name,
                       value: option.code,

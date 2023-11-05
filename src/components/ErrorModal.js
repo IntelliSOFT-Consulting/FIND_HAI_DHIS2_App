@@ -13,36 +13,21 @@ export default function ErrorModal({ error, setError }) {
 
   const navigate = useNavigate();
 
-  const patientConflict = error?.find((error) =>
-    error.name?.includes("Patient")
-  );
+  const patientConflict = error?.find((error) => error.name?.includes("Patient"));
 
   const { findPatientInstance } = UseFindPatientInstance();
   const { createEnrollment } = UseCreateEnrollment();
 
   const enrollPatient = async () => {
-    const response = await createEnrollment(
-      patient?.trackedEntityInstance,
-      program,
-      id
-    );
+    const response = await createEnrollment(patient?.trackedEntityInstance, program, id);
     if (response?.httpStatus === "OK") {
-      navigate(
-        `/surgery/${patient?.trackedEntityInstance}/${response?.response?.importSummaries[0]?.reference}`
-      );
+      navigate(`/surgery/${patient?.trackedEntityInstance}/${response?.response?.importSummaries[0]?.reference}`);
     }
   };
 
   const getPatient = async () => {
-    const patient = await findPatientInstance(
-      patientConflict?.attribute,
-      patientConflict?.value,
-      id,
-      program
-    );
-    const enrollments = patient?.enrollments?.filter(
-      (enrollment) => enrollment.status === "ACTIVE"
-    );
+    const patient = await findPatientInstance(patientConflict?.attribute, patientConflict?.value, id, program);
+    const enrollments = patient?.enrollments?.filter((enrollment) => enrollment.status === "ACTIVE");
 
     if (enrollments?.length === 0) {
       enrollPatient();
@@ -62,24 +47,17 @@ export default function ErrorModal({ error, setError }) {
       return (
         <div>
           <p>
-            A patient with {patientConflict?.name} of {patientConflict?.value}{" "}
-            already exists!
+            A patient with {patientConflict?.name} of {patientConflict?.value} already exists!
           </p>
           {enrollments?.length > 0 && (
             <div>
               <p>Active Surgeries:</p>
               <ul>
                 {enrollments?.map((enrollment) => {
-                  const surgeryName = enrollment?.attributes?.find(
-                    (item) => item.displayName === "Surgical Procedure"
-                  )?.value;
+                  const surgeryName = enrollment?.attributes?.find((item) => item.displayName === "Surgical Procedure")?.value;
                   return (
                     <li>
-                      <Link
-                        to={`/surgery/${patient?.trackedEntityInstance}/${enrollment?.enrollment}`}
-                      >
-                        {surgeryName}
-                      </Link>
+                      <Link to={`/surgery/${patient?.trackedEntityInstance}/${enrollment?.enrollment}`}>{surgeryName}</Link>
                     </li>
                   );
                 })}

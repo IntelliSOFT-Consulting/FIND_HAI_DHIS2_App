@@ -81,21 +81,13 @@ const MyApp = () => (
                         program={data?.programs?.programs[0]}
                         user={data?.me}
                         title={i18n.t("FIND")}
-                        organisationUnits={
-                          data?.organisationUnits?.organisationUnits[0]
-                        }
+                        organisationUnits={data?.organisationUnits?.organisationUnits[0]}
                       />
                     }
                   />
                   <Route
                     path="/"
-                    element={
-                      <Home
-                        program={data?.programs?.programs[0]}
-                        user={data?.me}
-                        title={i18n.t("FIND")}
-                      />
-                    }
+                    element={<Home program={data?.programs?.programs[0]} user={data?.me} title={i18n.t("FIND")} />}
                   />
                 </Routes>
               );

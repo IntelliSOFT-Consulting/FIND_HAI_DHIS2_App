@@ -4,14 +4,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 export default function UseSaveValue() {
   const engine = useDataEngine();
 
-  const saveValue = async (
-    event,
-    value,
-    dataElement,
-    orgUnit,
-    program,
-    programStage
-  ) => {
+  const saveValue = async (event, value, dataElement, orgUnit, program, programStage) => {
     try {
       const response = await engine.mutate({
         resource: `events/${event}/${dataElement}`,

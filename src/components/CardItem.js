@@ -17,6 +17,8 @@ const useStyles = createUseStyles({
   },
   card: {
     height: "fit-content !important",
+    width: "100%",
+    overflow: 'auto'
   },
   cardTitle: {
     backgroundColor: "#2C6693",
@@ -36,14 +38,11 @@ export default function CardItem({ title, footer, children }) {
   const styles = useStyles();
   return (
     <Card className={styles.card}>
-      {typeof title === "string" ? (
-        <h5 className={styles.cardTitle}>{title}</h5>
-      ) : (
-        <div className={styles.header}>{title}</div>
-      )}
+      {typeof title === "string" ? <h5 className={styles.cardTitle}>{title}</h5> : <div className={styles.header}>{title}</div>}
       <div
         style={{
           padding: 20,
+          width: "100%",
         }}
       >
         {children}

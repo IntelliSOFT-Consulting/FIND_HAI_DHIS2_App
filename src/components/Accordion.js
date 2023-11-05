@@ -53,9 +53,7 @@ const Accordion = ({ title, footer, open, children }) => {
         </div>
       </div>
       {isActive && <div className={classes.accordionContent}>{children}</div>}
-      {footer && isActive && (
-        <div className={classes.accordionFooter}>{footer}</div>
-      )}
+      {footer && isActive && <div className={classes.accordionFooter}>{footer}</div>}
     </div>
   );
 };

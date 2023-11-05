@@ -38,13 +38,10 @@ const formatAttributeValues = (attributes) => {
     };
   });
 
-  const attributeValuesObject = attributeValues.reduce(
-    (acc, attributeValue) => {
-      acc[attributeValue.name?.toLowerCase()] = attributeValue.value;
-      return acc;
-    },
-    {}
-  );
+  const attributeValuesObject = attributeValues.reduce((acc, attributeValue) => {
+    acc[attributeValue.name?.toLowerCase()] = attributeValue.value;
+    return acc;
+  }, {});
   return attributeValuesObject;
 };
 
@@ -56,6 +53,7 @@ export function formatRegistration(program) {
       return {
         title: section.name,
         description: section.description,
+        sectionId: section.id,
         dataElements: section.trackedEntityAttributes.map((attribute) => {
           return {
             name: attribute.name,
@@ -81,7 +79,8 @@ export function formatSurgery(program) {
       sections: stage.programStageSections.map((section) => {
         return {
           title: section.displayName,
-          repeating: section.description === 'repeating',
+          sectionId: section.id,
+          repeating: section.description === "repeating",
           dataElements: section.dataElements.map((dataElement) => {
             return {
               name: dataElement.displayName,
@@ -111,9 +110,7 @@ export function generateId() {
   const haiYyMmDdHhMmSs =
     `HAI-${year.toString().slice(2)}-` +
     `${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}-` +
-    `${hour.toString().padStart(2, "0")}-${minute
-      .toString()
-      .padStart(2, "0")}-${second.toString().padStart(2, "0")}`;
+    `${hour.toString().padStart(2, "0")}-${minute.toString().padStart(2, "0")}-${second.toString().padStart(2, "0")}`;
 
   return haiYyMmDdHhMmSs;
 }
@@ -124,7 +121,6 @@ export function isValidDate(dateString) {
   const regEx = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}\.\d{3}Z)?$/;
   return dateString.match(regEx) != null;
 }
-
 
 export function statusColor(status) {
   switch (status) {

@@ -3,11 +3,7 @@ import { setProgramValues } from "../redux/actions";
 import { useDispatch } from "react-redux";
 import { notification } from "antd";
 
-export default function UseGetInstanceValues({
-  instanceId,
-  program,
-  organisationUnit,
-}) {
+export default function UseGetInstanceValues({ instanceId, program, organisationUnit }) {
   const engine = useDataEngine();
   const dispatch = useDispatch();
 
