@@ -5,11 +5,17 @@ export default function UseDataStore() {
   const engine = useDataEngine();
 
   const getData = async (nameSpace, key = "") => {
-    const query = {
-      resource: `dataStore/${nameSpace}${key ? "/" + key : ""}`,
-    };
-    const { data } = await engine.query(query);
-    return data;
+    try {
+      const { dataStore } = await engine.query({
+        dataStore: {
+          resource: `dataStore/${nameSpace}/${key}`,
+        },
+      });
+      return dataStore;
+    } catch (error) {
+      console.log(error);
+      return null;
+    }
   };
 
   const saveData = async (nameSpace, key, value) => {

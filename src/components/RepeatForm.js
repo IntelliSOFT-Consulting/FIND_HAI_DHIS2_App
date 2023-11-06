@@ -3,6 +3,8 @@ import { Button, Tooltip } from "antd";
 import InputItem from "./InputItem";
 import { createUseStyles } from "react-jss";
 import { PlusOutlined } from "@ant-design/icons";
+import UseDataStore from "../hooks/useDataStore";
+import UseCreateEvent from "../hooks/useCreateEvent";
 
 const useStyles = createUseStyles({
   fullWidth: {
@@ -20,8 +22,11 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function RepeatForm({ Form, section }) {
+export default function RepeatForm({ Form, section,  }) {
   const classes = useStyles();
+
+  const { getData, saveData } = UseDataStore();
+  const { createEvent } = UseCreateEvent();
 
   return (
     <Form.List name={section?.sectionId}>
@@ -42,6 +47,7 @@ export default function RepeatForm({ Form, section }) {
                     },
                   ]}
                   className={section?.dataElements?.length === 1 ? classes.fullWidth : null}
+                  
                 >
                   <InputItem
                     type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
@@ -51,7 +57,9 @@ export default function RepeatForm({ Form, section }) {
                     }))}
                     placeholder={`Enter ${dataElement.name}`}
                     name={dataElement.id}
-                    defaultValue={dataElement?.value}
+                    onChange={(value) => {
+                      
+                    }}
                   />
                 </Form.Item>
               ))}
@@ -60,7 +68,13 @@ export default function RepeatForm({ Form, section }) {
           <Form.Item className={classes.submit}>
             <Button
               type="dashed"
-              onClick={() => {
+              onClick={async () => {
+                const mappings = await getData("repeatSections", "postOperative");
+                const event = await createEvent();
+                const payload = {
+                  parentEvent: '',
+                  event: event?.event,
+                };
                 add();
               }}
               block

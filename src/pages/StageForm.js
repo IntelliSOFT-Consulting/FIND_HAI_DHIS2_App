@@ -83,7 +83,6 @@ export default function StageForm() {
     const stageValues = data?.events?.filter((event) => event.programStage === stage)?.sort((a, b) => a.created - b.created);
 
     setEvents(stageValues);
-    console.log("stageValues: ", stageValues);
 
     if (data?.status) {
       let eventForms = stageValues?.map((event) => {
@@ -141,16 +140,13 @@ export default function StageForm() {
   const handleChange = async (value) => {
     const valueKey = Object.keys(value)[0];
     const valueObject = value[valueKey];
-    if (Array.isArray(valueObject)) {
-      return;
-    }
-
     await saveValue(events[0]?.event, valueObject, valueKey, id, program, stage);
   };
 
   const handleFinish = async (values, event) => {
     setLoading(true);
     const formListFields = Object.keys(values).filter((key) => Array.isArray(values[key]));
+    const mappings = await getData("repeatSections", "postOperative");
 
     const dataValues = Object.keys(values).map((key) => ({
       dataElement: key,
@@ -191,8 +187,6 @@ export default function StageForm() {
 
             return response;
           } else {
-            const mappings = await getData("repeatSections", "postOperative");
-
             const response = await createEvent(stage, item);
             if (response) {
               const newMapping = {

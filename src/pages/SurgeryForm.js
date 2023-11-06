@@ -15,6 +15,7 @@ import { CircularLoader } from "@dhis2/ui";
 import Overdue from "../components/Overdue";
 import { getFullEvents, isAddStageActive } from "../lib/stages";
 
+
 const useStyles = createUseStyles({
   header: {
     display: "flex",
@@ -43,6 +44,7 @@ export default function SurgeryForm() {
   const [showOverdue, setShowOverdue] = useState(false);
 
   const { registration, stages, trackedEntity, program } = useSelector((state) => state.forms);
+
 
   const classes = useStyles();
 
@@ -227,7 +229,6 @@ export default function SurgeryForm() {
           ))}
           {formValues?.stagesValues?.map((stage, index) => (
             <div className={classes.section} key={index}>
-              {console.log("stage: ", stage)}
               <Section
                 title={
                   <div className={classes.header}>
@@ -271,12 +272,7 @@ export default function SurgeryForm() {
 
               {isAddStageActive(stage, enrollmentData) && (
                 <div className={classes.newEvent}>
-                  <Button
-                    onClick={() => addEvent(stage)}
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    block
-                  >
+                  <Button onClick={() => addEvent(stage)} type="dashed" icon={<PlusOutlined />} block>
                     Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
                   </Button>
                 </div>

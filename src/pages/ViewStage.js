@@ -1,86 +1,54 @@
 import React, { useEffect, useState } from "react";
-import { Table, Badge } from "antd";
+import { Table, Badge, Button } from "antd";
 import { Link, useParams, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { isValidDate } from "../lib/helpers";
 import Section from "../components/Section";
 import moment from "moment";
 import CardItem from "../components/CardItem";
-import UseGetEvent from "../hooks/useGetEvent";
-import { Button, CircularLoader } from "@dhis2/ui";
+import { CircularLoader } from "@dhis2/ui";
 import { DoubleLeftOutlined } from "@ant-design/icons";
 import { createUseStyles } from "react-jss";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
+import UseViewData from "../hooks/UseViewData";
 
 const useStyles = createUseStyles({
+  "@global": {
+    ".ant-table": {
+      borderRadius: "0px !important",
+      "& *": {
+        borderRadius: "0px !important",
+      },
+    },
+  },
   backButton: {
     marginBottom: "1rem",
   },
 });
 
 export default function ViewStage() {
-  const [formValues, setFormValues] = useState(null);
   const [status, setStatus] = useState(null);
-  const [surgeryLink, setSurgeryLink] = useState(null);
   const { stages } = useSelector((state) => state.forms);
 
   const { getEnrollmentData } = UseGetEnrollmentsData();
 
-  const { stage, enrollment, trackedEntityInstance } = useParams();
-  const { search } = useLocation();
+  const { dataViewModel, setEnrollment } = UseViewData();
 
-  const params = Object.fromEntries(new URLSearchParams(search.slice(1)));
+  const { stage, enrollment, trackedEntityInstance } = useParams();
+  const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
 
   const classes = useStyles();
-
-  const { getEvent } = UseGetEvent();
 
   const stageForm = stages?.find((item) => item.id === stage);
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
-    // setEnrollmentData(data);
-
-    const stageValues = data?.events?.filter((event) => event.programStage === stage)?.sort((a, b) => a.created - b.created);
-
-    if (data?.status) {
-      let eventForms = stageValues?.map((event) => {
-        return {
-          ...event,
-          ...event?.dataValues?.reduce((acc, curr) => {
-            acc[curr.dataElement] = curr.value;
-            return acc;
-          }, {}),
-        };
-      });
-
-      if (params?.event) {
-        const filtered = eventForms?.filter((item) => item?.event === params?.event);
-
-        setFormValues(filtered);
-      } else {
-        setFormValues(eventForms);
-      }
-    }
-  };
-
-  const fetchValues = async () => {
-    const data = await getEvent(event);
-    setStatus(data?.status);
-    setSurgeryLink(`/surgery/${data?.trackedEntityInstance}/${data?.enrollment}`);
-    const values = data?.dataValues?.reduce((acc, curr) => {
-      acc[curr.id] = isValidDate(curr.value) ? moment(curr.value).format("DD MMM YYYY") : curr.value;
-      return acc;
-    }, {});
-
-    setFormValues(values);
+    setEnrollment(data);
   };
 
   useEffect(() => {
     if (enrollment) {
       getEnrollment();
-    } else {
-      setFormValues({});
     }
   }, [enrollment]);
 
@@ -89,6 +57,7 @@ export default function ViewStage() {
       title: "Name",
       dataIndex: "name",
       key: "name",
+      width: "60%",
     },
     {
       title: "Value",
@@ -109,30 +78,16 @@ export default function ViewStage() {
   ];
 
   let content;
-  if (!formValues) {
+  if (!dataViewModel) {
     content = <CircularLoader />;
   } else {
     content = (
       <>
-        {formValues?.map((formValue) => (
-          <>
-            {stageForm?.sections?.map((section) => (
-              <React.Fragment key={section.id}>
-                <Section title={section.title} />
-                <Table
-                  columns={columns}
-                  dataSource={section?.dataElements?.map((dataElement) => ({
-                    key: dataElement.id,
-                    name: dataElement.name,
-                    value: formValue[dataElement.id],
-                  }))}
-                  pagination={false}
-                  bordered
-                  showHeader={false}
-                />
-              </React.Fragment>
-            ))}
-          </>
+        {dataViewModel?.sections?.map((section) => (
+          <React.Fragment key={section.id}>
+            <Section title={section.title} />
+            <Table columns={columns} dataSource={section?.dataElements} pagination={false} bordered showHeader={false} />
+          </React.Fragment>
         ))}
       </>
     );

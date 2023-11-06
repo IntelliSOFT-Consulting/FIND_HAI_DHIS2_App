@@ -1,5 +1,5 @@
 import React from "react";
-import { Form, Button, Tooltip } from "antd";
+import { Form, Button } from "antd";
 import { useSelector } from "react-redux";
 import Section from "./Section";
 import InputItem from "./InputItem";
@@ -30,34 +30,11 @@ export default function Stage({ handleChange, handleFinish, stageForm, repeatabl
   const event = stageForm?.[0]?.dataElements?.[0]?.event;
   const status = stageForm?.[0]?.status;
 
-  const { updateEnrollment } = UseUpdateEnrollment();
-
-  const handleOverdue = async (values, stage) => {
-    const payload = Object.keys(values).map((key) => ({
-      dataElement: key,
-      value: values[key],
-    }));
-
-    const event = await createEvent(stage, payload);
-    if (event) {
-      const updatedEnrollmentData = {
-        ...enrollmentData,
-        status: "CANCELLED",
-      };
-      delete updatedEnrollmentData?.events;
-
-      await updateEnrollment(enrollment, updatedEnrollmentData);
-      getEnrollment();
-    }
-  };
-
-  console.log("formValues: ", formValues)
-
   return (
     <Form
       form={form}
       layout="vertical"
-      onValuesChange={(value) => handleChange(value)}
+      // onValuesChange={(value) => handleChange(value)}
       onFinish={(values) => handleFinish(values, event)}
       initialValues={formValues}
     >
@@ -69,39 +46,32 @@ export default function Stage({ handleChange, handleFinish, stageForm, repeatabl
               <RepeatForm Form={Form} form={form} section={section} />
             ) : (
               section?.dataElements?.map((dataElement) => (
-                <Tooltip
-                  title={
-                    status === "COMPLETED"
-                      ? "You can't edit this field because the stage is completed. If you want to edit this field, you need to open the stage."
-                      : null
-                  }
-                  key={dataElement.id}
+                <Form.Item
+                  label={dataElement.name}
+                  name={dataElement.id}
+                  valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
+                  rules={[
+                    {
+                      required: dataElement?.required,
+                      message: `Please enter ${dataElement.name}`,
+                    },
+                    dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
+                  ]}
                 >
-                  <Form.Item
-                    label={dataElement.name}
+                  <InputItem
+                    type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
+                    options={dataElement?.optionSet?.options?.map((option) => ({
+                      label: option.displayName,
+                      value: option.code,
+                    }))}
+                    placeholder={`Enter ${dataElement.name}`}
                     name={dataElement.id}
-                    valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
-                    rules={[
-                      {
-                        required: dataElement?.required,
-                        message: `Please enter ${dataElement.name}`,
-                      },
-                      dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
-                    ]}
-                  >
-                    <InputItem
-                      type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
-                      options={dataElement?.optionSet?.options?.map((option) => ({
-                        label: option.displayName,
-                        value: option.code,
-                      }))}
-                      placeholder={`Enter ${dataElement.name}`}
-                      name={dataElement.id}
-                      defaultValue={formValues?.[dataElement.id]}
-                      disabled={status === "COMPLETED"}
-                    />
-                  </Form.Item>
-                </Tooltip>
+                    onChange={(e) => {
+                      handleChange({ [dataElement.id]: e.target.value });
+                    }}
+                    defaultValue={formValues?.[dataElement.id]}
+                  />
+                </Form.Item>
               ))
             )}
           </div>

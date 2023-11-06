@@ -21,9 +21,8 @@ export const getFullEvents = (stage) => {
   };
 };
 
-
 export const isAddStageActive = (stage, enrollmentData) => {
-  const events = stage?.events?.filter((event) => event?.dataValues?.length > 0);
+  const events = getFullEvents(stage)?.events?.filter((event) => event?.dataValues?.length > 0);
   return (
     stage?.repeatable &&
     (!stage?.repeattype || (stage?.repeattype && stage?.repeattype !== "section")) &&
@@ -32,4 +31,3 @@ export const isAddStageActive = (stage, enrollmentData) => {
     enrollmentData?.status === "ACTIVE"
   );
 };
-

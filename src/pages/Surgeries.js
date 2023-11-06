@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
-import { Input, Button, Space, Tag, Table } from "antd";
+import { Input, Button, Space, Tag, Table, DatePicker } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
 import moment from "moment";
@@ -13,6 +13,19 @@ import { isValidDate } from "../lib/helpers";
 const useStyles = createUseStyles({
   search: {
     marginBottom: "2rem",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "1rem",
+    alignItems: "center",
+    "@media (max-width: 768px)": {
+      gridTemplateColumns: "1fr",
+    },
+  },
+  datePicker: {
+    marginLeft: "1rem",
+    "@media (max-width: 768px)": {
+      marginLeft: 0,
+    },
   },
   button: {
     boxShadow: "none !important",
@@ -36,6 +49,14 @@ export default function Surgeries({ program, user, organisationUnits }) {
   }, []);
 
   const getSurgeries = async (query = "") => {
+    let startDate;
+    let endDate;
+    if (query?.includes("..")) {
+      const dates = query?.split("..");
+      startDate = dates[0];
+      endDate = dates[1];
+      query = "";
+    }
     const dataElementIds = registration?.sections?.flatMap((section) => {
       return section?.dataElements?.filter((dataElement) => {
         return dataElement?.name === "Secondary ID" || dataElement?.name === "Patient ID";
@@ -96,6 +117,19 @@ export default function Surgeries({ program, user, organisationUnits }) {
       const enrollments = results?.flatMap((result) => result);
       setInstances(enrollments);
       return enrollments;
+    }
+
+    if (startDate && endDate) {
+      const dateOfSurgeryDataElement = registration?.sections?.flatMap((section) => {
+        return section?.dataElements?.filter((dataElement) => {
+          return dataElement?.name?.toLowerCase() === "date of surgery";
+        });
+      })[0];
+
+      options.events.params = {
+        ...options.events.params,
+        filter: `${dateOfSurgeryDataElement?.id}:ge:${startDate}&${dateOfSurgeryDataElement?.id}:le:${endDate}`,
+      };
     }
 
     const { events } = await engine.query(options);
@@ -190,6 +224,17 @@ export default function Surgeries({ program, user, organisationUnits }) {
           enterButton="Search"
           allowClear
           onChange={(e) => getSurgeriesDebounced(e.target.value)}
+        />
+        <DatePicker.RangePicker
+          onChange={(dates) => {
+            if (dates?.length) {
+              getSurgeriesDebounced(dates[0].format("YYYY-MM-DD") + ".." + dates[1].format("YYYY-MM-DD"));
+            } else {
+              getSurgeriesDebounced();
+            }
+          }}
+          className={styles.datePicker}
+          size="large"
         />
       </div>
       {!instances ? (
