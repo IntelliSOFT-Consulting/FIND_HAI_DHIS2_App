@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
+import { formatValue } from "../lib/mapValues";
 
 export default function useViewData() {
   const [enrollment, setEnrollment] = useState({});
@@ -66,7 +67,10 @@ export default function useViewData() {
           id: element.id,
           name: element.name,
           value: initialValues[section.sectionId]
-            ? initialValues[section.sectionId]?.map((item) => item[element.id]).join(", ")
+            ? initialValues[section.sectionId]
+                ?.map((item) => formatValue(item[element.id]))
+                ?.filter((item) => item !== undefined && item !== null && item !== "")
+                ?.join(", ")
             : initialValues[element.id],
           sectionId: section.sectionId,
         };

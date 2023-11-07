@@ -1,3 +1,20 @@
+import dayjs from "dayjs";
+import localeData from "dayjs/plugin/localeData";
+import weekday from "dayjs/plugin/weekday";
+import { isValidDate } from "./helpers";
+
+dayjs.extend(weekday);
+dayjs.extend(localeData);
+
+export const formatValue = (value) => {
+  if (value === "true" || value === "false") {
+    return JSON.parse(value);
+  } else if (isValidDate(value)) {
+    return dayjs(value, "YYYY-MM-DD");
+  }
+  return value;
+};
+
 export const formatValues = (form, dataValues) => {
   const dataElements = form?.sections?.map((section) => {
     if (form.enrollment) {
