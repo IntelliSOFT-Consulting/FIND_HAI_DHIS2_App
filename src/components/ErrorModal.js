@@ -26,13 +26,13 @@ export default function ErrorModal({ error, setError }) {
   };
 
   const getPatient = async () => {
-    const patient = await findPatientInstance(patientConflict?.attribute, patientConflict?.value, id, program);
-    const enrollments = patient?.enrollments?.filter((enrollment) => enrollment.status === "ACTIVE");
+    const patientInstance = await findPatientInstance(patientConflict?.attribute, patientConflict?.value, id, program);
+    const enrollments = patientInstance?.enrollments?.filter((enrollment) => enrollment.status === "ACTIVE");
 
     if (enrollments?.length === 0) {
-      enrollPatient();
+      enrollPatient(patientInstance?.trackedEntityInstance);
     }
-    setPatient(patient);
+    setPatient(patientInstance);
     setEnrollments(enrollments);
   };
 
@@ -81,7 +81,7 @@ export default function ErrorModal({ error, setError }) {
 
   const handleOk = async () => {
     if (enrollments?.length > 0) {
-      enrollPatient();
+      enrollPatient(patient?.trackedEntityInstance);
     } else {
       setError(false);
     }

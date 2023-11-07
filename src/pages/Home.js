@@ -21,6 +21,12 @@ const styles = createUseStyles({
       fontSize: "1.5rem",
       lineHeight: "1.2",
     },
+    "@media (max-width: 768px)": {
+      gridColumn: "1/3",
+    },
+    "@media (max-width: 671px)": {
+      gridColumn: "auto",
+    },
   },
   links: {
     display: "grid",
@@ -43,6 +49,7 @@ const styles = createUseStyles({
     margin: "0 3rem",
     cursor: "pointer",
     textDecoration: "none",
+    minWidth: "10rem",
     "&:hover": {
       transform: "scale(1.05)",
     },

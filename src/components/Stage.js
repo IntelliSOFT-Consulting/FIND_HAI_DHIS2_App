@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Form, Button } from "antd";
 import { useSelector } from "react-redux";
 import Section from "./Section";
@@ -7,6 +7,7 @@ import { createUseStyles } from "react-jss";
 import { statusColor } from "../lib/helpers";
 import RepeatForm from "./RepeatForm";
 import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
+import { useNavigate } from "react-router-dom";
 
 const useStyles = createUseStyles({
   form: {
@@ -20,12 +21,31 @@ const useStyles = createUseStyles({
   },
   submit: {
     margin: "1rem",
+    backgroundColor: "#026C26 !important",
+    color: "white",
+    borderColor: "#026C26 !important",
+    "&:hover": {
+      backgroundColor: "#026C26 !important",
+      color: "white !important",
+    },
+  },
+  cancel: {
+    margin: "1rem",
+    backgroundColor: "#B10606",
+    color: "white",
+    borderColor: "#B10606 !important",
+    "&:hover": {
+      backgroundColor: "#B10606 !important",
+      color: "white !important",
+    },
   },
 });
 
-export default function Stage({ handleChange, handleFinish, stageForm, repeatable, formValues }) {
+export default function Stage({ handleChange, handleFinish, stageForm, repeatable, formValues, surgeryLink }) {
+  const [allValues, setAllValues] = useState(formValues);
   const classes = useStyles();
   const [form] = Form.useForm();
+  const navigate = useNavigate();
 
   const event = stageForm?.[0]?.dataElements?.[0]?.event;
   const status = stageForm?.[0]?.status;
@@ -34,7 +54,7 @@ export default function Stage({ handleChange, handleFinish, stageForm, repeatabl
     <Form
       form={form}
       layout="vertical"
-      // onValuesChange={(value) => handleChange(value)}
+      onValuesChange={(_, values) => setAllValues(values)}
       onFinish={(values) => handleFinish(values, event)}
       initialValues={formValues}
     >
@@ -67,7 +87,7 @@ export default function Stage({ handleChange, handleFinish, stageForm, repeatabl
                     placeholder={`Enter ${dataElement.name}`}
                     name={dataElement.id}
                     onChange={(e) => {
-                      handleChange({ [dataElement.id]: e.target.value });
+                      handleChange({ [dataElement.id]: e?.target ? e.target.value : e });
                     }}
                     defaultValue={formValues?.[dataElement.id]}
                   />
@@ -77,9 +97,19 @@ export default function Stage({ handleChange, handleFinish, stageForm, repeatabl
           </div>
         </div>
       ))}
-      <Button className={classes.submit} type="primary" htmlType="submit">
-        Submit
-      </Button>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Button
+          className={classes.cancel}
+          onClick={() => {
+            navigate(surgeryLink);
+          }}
+        >
+          Cancel
+        </Button>
+        <Button className={classes.submit} htmlType="submit">
+          Save
+        </Button>
+      </div>
     </Form>
   );
 }

@@ -15,8 +15,15 @@ import { CircularLoader } from "@dhis2/ui";
 import Overdue from "../components/Overdue";
 import { getFullEvents, isAddStageActive } from "../lib/stages";
 
-
 const useStyles = createUseStyles({
+  "@global": {
+    ".ant-table": {
+      borderRadius: "0px !important",
+      "& *": {
+        borderRadius: "0px !important",
+      },
+    },
+  },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -44,7 +51,6 @@ export default function SurgeryForm() {
   const [showOverdue, setShowOverdue] = useState(false);
 
   const { registration, stages, trackedEntity, program } = useSelector((state) => state.forms);
-
 
   const classes = useStyles();
 
@@ -208,10 +214,12 @@ export default function SurgeryForm() {
       ) : (
         <div>
           <Badge.Ribbon
-            text={enrollmentData?.status !== "ACTIVE" ? "CLOSED" : "ACTIVE"}
+            text={
+              enrollmentData?.status === "ACTIVE" ? "ACTIVE" : enrollmentData?.status === "COMPLETED" ? "COMPLETED" : "CLOSED"
+            }
             color={statusColor(enrollmentData?.status)}
           >
-            <Section title={<h3>Status: {enrollmentData?.status}</h3>} primary padded />
+            <Section title="Surgery Details" primary />
           </Badge.Ribbon>
           {formValues?.enrollmentValues?.map((section, index) => (
             <>

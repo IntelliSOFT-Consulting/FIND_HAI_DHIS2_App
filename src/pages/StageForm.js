@@ -16,6 +16,7 @@ import weekday from "dayjs/plugin/weekday";
 import Stage from "../components/Stage";
 import { DoubleLeftOutlined } from "@ant-design/icons";
 import UseCreateEvent from "../hooks/useCreateEvent";
+import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
 import { useDataEngine } from "@dhis2/app-runtime";
 import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
@@ -64,6 +65,7 @@ export default function StageForm() {
   const navigate = useNavigate();
 
   const { createEvent } = UseCreateEvent();
+  const { updateEnrollment } = UseUpdateEnrollment();
   const { getData, saveData } = UseDataStore();
 
   const { stage, enrollment, trackedEntityInstance } = useParams();
@@ -204,6 +206,13 @@ export default function StageForm() {
       );
 
       if (saveValues) {
+        if (stageForm?.title?.toLowerCase()?.includes("outcome")) {
+          const updatedEnrollmentData = {
+            ...enrollmentData,
+            status: "COMPLETED",
+          };
+          await updateEnrollment(enrollment, updatedEnrollmentData);
+        }
         getEnrollment();
         setLoading(false);
         setSuccess("Event saved successfully");
@@ -215,6 +224,24 @@ export default function StageForm() {
 
         navigate(surgeryLink);
       }
+    } else {
+      if (stageForm?.title?.toLowerCase()?.includes("outcome")) {
+        const updatedEnrollmentData = {
+          ...enrollmentData,
+          status: "COMPLETED",
+        };
+        await updateEnrollment(enrollment, updatedEnrollmentData);
+      }
+      getEnrollment();
+      setLoading(false);
+      setSuccess("Event saved successfully");
+      const timeout = setTimeout(() => {
+        setSuccess(null);
+      }, 2000);
+
+      () => clearTimeout(timeout);
+
+      navigate(surgeryLink);
     }
   };
 
@@ -241,6 +268,7 @@ export default function StageForm() {
                 handleFinish={handleFinish}
                 formValues={formValues}
                 repeatable={stageForm?.repeatable && stageForm?.repeattype !== "section"}
+                surgeryLink={surgeryLink}
               />
             </div>
           </Spin>
