@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Badge, Button } from "antd";
+import { Table, Badge, Button, Breadcrumb } from "antd";
 import { Link, useParams, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { isValidDate } from "../lib/helpers";
@@ -96,11 +96,21 @@ export default function ViewStage() {
   return (
     <Badge.Ribbon text={status} color={status === "COMPLETED" ? "purple" : status === "ACTIVE" ? "cyan" : "gold"}>
       {surgeryLink && (
-        <Link to={surgeryLink}>
-          <Button icon={<DoubleLeftOutlined />} className={classes.backButton} size="small">
-            Back to Surgery Overview
-          </Button>
-        </Link>
+        <Breadcrumb
+          separator={<DoubleLeftOutlined />}
+          style={{ marginBottom: "1rem" }}
+          items={[
+            {
+              title: <Link to="/surgeries">Surgeries</Link>,
+            },
+            {
+              title: <Link to={surgeryLink}>Surgery Details</Link>,
+            },
+            {
+              title: stageForm?.title,
+            },
+          ]}
+        />
       )}
       <CardItem title={stageForm?.title}>{content}</CardItem>
     </Badge.Ribbon>

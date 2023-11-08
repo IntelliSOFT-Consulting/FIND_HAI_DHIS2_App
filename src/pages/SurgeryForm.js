@@ -79,6 +79,7 @@ export default function SurgeryForm() {
               : {
                   event: stageValue?.event,
                   status: stageValue?.status,
+                  programStage: stageValue?.programStage,
                 }),
           };
         }),

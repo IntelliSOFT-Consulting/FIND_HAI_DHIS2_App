@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Button, Spin } from "antd";
-import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
+import { Button, Spin, Breadcrumb } from "antd";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
-import { isValidDate } from "../lib/helpers";
 import { createUseStyles } from "react-jss";
 import CardItem from "../components/CardItem";
 import UseSaveValue from "../hooks/useSaveValue";
-import UseGetEvent from "../hooks/useGetEvent";
 import UseCompleteEvent from "../hooks/useCompleteEvent";
 import { CircularLoader } from "@dhis2/ui";
 import dayjs from "dayjs";
@@ -17,9 +15,10 @@ import Stage from "../components/Stage";
 import { DoubleLeftOutlined } from "@ant-design/icons";
 import UseCreateEvent from "../hooks/useCreateEvent";
 import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
-import { useDataEngine } from "@dhis2/app-runtime";
 import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
+import { formatValue } from "../lib/mapValues";
+import { createPayload } from "../lib/stages";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -82,61 +81,87 @@ export default function StageForm() {
     const data = await getEnrollmentData();
     setEnrollmentData(data);
 
-    const stageValues = data?.events?.filter((event) => event.programStage === stage)?.sort((a, b) => a.created - b.created);
-
-    setEvents(stageValues);
-
     if (data?.status) {
-      let eventForms = stageValues?.map((event) => {
-        const stageEvent = {
-          ...event,
-          ...event?.dataValues?.reduce((acc, curr) => {
-            acc[curr.dataElement] = curr.value;
-            return acc;
-          }, {}),
-        };
+      const stageValues = filterAndSortEvents(data.events);
 
-        return stageEvent;
-      });
+      const eventForms = mapEventForms(stageValues);
+      const mappedValues = mapSectionValues(eventForms);
 
-      const mappedValues = stageForm?.sections?.map((section) => {
-        if (section?.repeating) {
-          const sectionIds = section.dataElements.map((item) => item.id);
-          const values = eventForms?.map((event) => {
-            return sectionIds?.reduce((acc, curr) => {
-              acc[curr] = event?.[curr];
-              return acc;
-            }, {});
-          });
+      const initialValues = mergeSectionValues(mappedValues);
 
-          return {
-            [section.sectionId]: values,
-          };
+      setEvents(stageValues);
+      localStorage.setItem("stageValues", JSON.stringify(initialValues));
+      for (const key in initialValues) {
+        if (initialValues.hasOwnProperty(key)) {
+          const value = initialValues[key];
+          if (Array.isArray(value)) {
+            initialValues[key] = value.map((item) => {
+              const newItem = {};
+              for (const key in item) {
+                if (item.hasOwnProperty(key)) {
+                  const newKey = key.split(".")[0];
+                  newItem[newKey] = item[key];
+                }
+              }
+              return newItem;
+            });
+          }
         }
-        return section?.dataElements?.reduce((acc, dataElement) => {
-          const value =
-            eventForms?.find((item) => item?.[dataElement?.id] !== null && item?.[dataElement?.id] !== undefined)?.[
-              dataElement?.id
-            ] || null;
-
-          acc[dataElement?.id] = isValidDate(value)
-            ? dayjs(value, dateFormat)
-            : value === "true"
-            ? true
-            : value === "false"
-            ? false
-            : value;
-          return acc;
-        }, {});
-      });
-
-      const initialValues = mappedValues?.reduce((acc, curr) => {
-        acc = { ...acc, ...curr };
-        return acc;
-      }, {});
-
+      }
       setFormValues(initialValues);
     }
+  };
+
+  const filterAndSortEvents = (events) => {
+    return events?.filter((event) => event.programStage === stage)?.sort((a, b) => a.created - b.created);
+  };
+
+  const mapEventForms = (stageValues) => {
+    return stageValues?.map((event) => {
+      const dataValues = event?.dataValues || [];
+      const dataMap = dataValues.reduce(
+        (acc, curr) => ({
+          ...acc,
+          [curr.dataElement]: curr.value,
+        }),
+        {}
+      );
+      return { ...event, ...dataMap };
+    });
+  };
+
+  const mapSectionValues = (eventForms) => {
+    return stageForm?.sections?.map((section) => {
+      if (section?.repeating) {
+        const sectionIds = section.dataElements.map((item) => item.id);
+        const sectionData = eventForms
+          ?.map((event) => {
+            return sectionIds.reduce((acc, curr) => {
+              acc[`${curr}.${event?.event}`] = event?.[curr];
+              return acc;
+            }, {});
+          })
+          .filter((item) => Object.values(item).filter((item) => item || item?.toString() === "false")?.length > 0);
+        return {
+          [section.sectionId]: sectionData?.length > 0 ? sectionData : [{}],
+        };
+      }
+      return section?.dataElements?.reduce((acc, dataElement) => {
+        const value = findNonNullValue(eventForms, dataElement.id);
+        acc[dataElement.id] = formatValue(value);
+        return acc;
+      }, {});
+    });
+  };
+
+  const findNonNullValue = (eventForms, dataElementId) => {
+    return (
+      eventForms?.find((item) => item?.[dataElementId] !== null && item?.[dataElementId] !== undefined)?.[dataElementId] || null
+    );
+  };
+
+  const mergeSectionValues = (mappedValues) => {
+    return mappedValues?.reduce((acc, curr) => ({ ...acc, ...curr }), {});
   };
 
   const handleChange = async (value) => {
@@ -147,93 +172,37 @@ export default function StageForm() {
 
   const handleFinish = async (values, event) => {
     setLoading(true);
-    const formListFields = Object.keys(values).filter((key) => Array.isArray(values[key]));
-    const mappings = await getData("repeatSections", "postOperative");
+    try {
+      const mainEvent = events[0]?.event;
+      const submissions = createPayload(values);
+      const mappings = await getData("repeatSections", "postOperative");
 
-    const dataValues = Object.keys(values).map((key) => ({
-      dataElement: key,
-      value: values[key],
-    }));
+      const newFields = submissions.filter((item) => item.status)?.filter((item) => item.dataValues?.length > 0);
+      const updateFields = submissions.filter((item) => item.event)?.filter((item) => item.dataValues?.length > 0);
 
-    const payload = dataValues.filter((item) => !formListFields.includes(item.dataElement));
-
-    if (formListFields.length > 0) {
-      let draft = [];
-      let listvalues = formListFields.map((field, index) => {
-        const eventValues = values[field].map((value, i) => {
-          const eventId = events[i]?.event;
-          const dataValues = Object.keys(value).map((key) => ({
-            event: eventId,
-            dataElement: key,
-            value: value[key],
-          }));
-          if (eventId) {
-            const filteredValues = events[i]?.dataValues?.filter(
-              (item) => !dataValues.some((value) => value.dataElement === item.dataElement)
-            );
-
-            dataValues.unshift(...filteredValues);
+      const newEvents = await Promise.all(
+        newFields.map(async (item) => {
+          const response = await createEvent(stage, item.dataValues);
+          if (response) {
+            const newMapping = {
+              parentEvent: mainEvent,
+              event: response,
+            };
+            mappings.push(newMapping);
           }
-          draft[i] = [...(draft[i] || []), ...dataValues];
-
-          return dataValues;
-        });
-
-        return eventValues;
-      });
-
-      const saveValues = await Promise.all(
-        draft.map(async (item, i) => {
-          if (events[i]) {
-            const response = await completeEvent(events[i]?.event, id, program, stage, item, "ACTIVE");
-
-            return response;
-          } else {
-            const response = await createEvent(stage, item);
-            if (response) {
-              const newMapping = {
-                parentEvent: events[0]?.event,
-                event: response,
-              };
-              mappings.push(newMapping);
-
-              const mappedResponse = await saveData("repeatSections", "postOperative", mappings);
-              return mappedResponse;
-            }
-            return response;
-          }
+          return response;
         })
       );
 
-      if (saveValues) {
-        if (stageForm?.title?.toLowerCase()?.includes("outcome")) {
-          const updatedEnrollmentData = {
-            ...enrollmentData,
-            status: "COMPLETED",
-          };
-          await updateEnrollment(enrollment, updatedEnrollmentData);
-        }
-        getEnrollment();
-        setLoading(false);
-        setSuccess("Event saved successfully");
-        const timeout = setTimeout(() => {
-          setSuccess(null);
-        }, 2000);
+      const updateEvents = await Promise.all(
+        updateFields.map(async (item) => {
+          const response = await completeEvent(item.event, id, program, stage, item.dataValues, "ACTIVE");
+          return response;
+        })
+      );
 
-        () => clearTimeout(timeout);
+      await saveData("repeatSections", "postOperative", mappings);
 
-        navigate(surgeryLink);
-      }
-    } else {
-      if (stageForm?.title?.toLowerCase()?.includes("outcome")) {
-        const updatedEnrollmentData = {
-          ...enrollmentData,
-          status: "COMPLETED",
-        };
-        await updateEnrollment(enrollment, updatedEnrollmentData);
-      }
-      getEnrollment();
-      setLoading(false);
       setSuccess("Event saved successfully");
       const timeout = setTimeout(() => {
         setSuccess(null);
@@ -242,6 +211,8 @@ export default function StageForm() {
       () => clearTimeout(timeout);
 
       navigate(surgeryLink);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -251,11 +222,21 @@ export default function StageForm() {
 
   return (
     <div>
-      <Link to={surgeryLink}>
-        <Button icon={<DoubleLeftOutlined />} className={classes.backButton} size="small">
-          Back to Surgery Overview
-        </Button>
-      </Link>
+      <Breadcrumb
+        separator={<DoubleLeftOutlined />}
+        style={{ marginBottom: "1rem" }}
+        items={[
+          {
+            title: <Link to="/surgeries">Surgeries</Link>,
+          },
+          {
+            title: <Link to={surgeryLink}>Surgery Details</Link>,
+          },
+          {
+            title: stageForm?.title,
+          },
+        ]}
+      />
       <CardItem title={stageForm?.title}>
         {!formValues ? (
           <CircularLoader />

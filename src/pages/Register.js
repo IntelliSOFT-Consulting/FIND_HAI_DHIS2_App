@@ -134,7 +134,6 @@ export default function Register() {
       }
     } catch (error) {
       const conflicts = getConflicts(error?.details, registration);
-      console.log(conflicts)
       setError(conflicts);
     }
   };

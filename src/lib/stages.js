@@ -36,3 +36,27 @@ export const isAddStageActive = (stage, enrollmentData) => {
     enrollmentData?.status === "ACTIVE"
   );
 };
+
+export const createPayload = (values) => {
+  const store = localStorage.getItem("stageValues");
+  const initialValues = store ? JSON.parse(store) : {};
+  return Object.keys(values)
+    .filter((key) => Array.isArray(values[key]))
+    .flatMap((field) =>
+      values[field].map((submission, index) => {
+        let eventId = null;
+        const formattedSubmission = Object.entries(submission).map(([key, value]) => {
+          const event = initialValues[field][index] ? Object.keys(initialValues[field][index])[0]?.split(".")[1] : null;
+
+          if (event) {
+            eventId = event;
+          }
+          return { dataElement: key, value };
+        });
+
+        const eventMetadata = eventId ? { event: eventId } : { status: "ACTIVE" };
+
+        return { ...eventMetadata, dataValues: formattedSubmission };
+      })
+    );
+};

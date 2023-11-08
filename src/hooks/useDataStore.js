@@ -13,7 +13,6 @@ export default function UseDataStore() {
       });
       return dataStore;
     } catch (error) {
-      console.log(error);
       return null;
     }
   };
@@ -21,7 +20,7 @@ export default function UseDataStore() {
   const saveData = async (nameSpace, key, value) => {
     const query = {
       resource: `dataStore/${nameSpace}/${key}`,
-      type: "create",
+      type: "update",
       data: value,
     };
     const { data } = await engine.mutate(query);

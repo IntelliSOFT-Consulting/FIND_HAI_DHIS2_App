@@ -100,8 +100,6 @@ export default function useViewData() {
   const nonRepeatableSections = stageForm?.sections?.filter((item) => !item.repeating);
   const nonRepeatableElements = nonRepeatableSections?.flatMap((section) => section.dataElements?.map((item) => item.id));
 
-  console.log(findDataViewModel(stageForm, enrollment, nonRepeatableElements));
-
   return {
     enrollment,
     setEnrollment,
