@@ -17,7 +17,7 @@ export default function UseCreateEvent() {
           events: [
             {
               program: program,
-              programStage: stage || programStage,
+              programStage: programStage || stage,
               trackedEntityInstance,
               orgUnit: id,
               enrollment,
@@ -34,5 +34,29 @@ export default function UseCreateEvent() {
     }
   };
 
-  return { createEvent };
+  const createStageEvents = async (stageIds, values = []) => {
+    try {
+      const { response } = await engine.mutate({
+        resource: `events`,
+        type: "create",
+        data: {
+          events: stageIds.map((stageId) => ({
+            program: program,
+            programStage: stageId,
+            trackedEntityInstance,
+            orgUnit: id,
+            enrollment,
+            status: "ACTIVE",
+            dataValues: values || [],
+            eventDate: new Date().toISOString().slice(0, 10),
+          })),
+        },
+      });
+      return response?.importSummaries?.map((summary) => summary?.reference);
+    } catch (error) {
+      return error?.details?.response?.importSummaries[0]?.description;
+    }
+  };
+
+  return { createEvent, createStageEvents };
 }

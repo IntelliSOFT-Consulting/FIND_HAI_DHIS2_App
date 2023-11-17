@@ -7,7 +7,7 @@ import {
 } from "@ant-design/icons";
 import { Menu, Layout } from "antd";
 import { createUseStyles } from "react-jss";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import routes from "../routes";
 import UseGetForms from "../hooks/useGetForms";
 import UseGetOrgUnit from "../hooks/useGetOrgUnit";
@@ -73,6 +73,8 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
 
   const navigate = useNavigate();
 
+  const location = useLocation();
+
   const onClick = (e) => {
     navigate(e.key);
   };
@@ -87,12 +89,13 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
     }
   }, [forms, orgUnit]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   return (
     <Layout>
-      <Sider
-        breakpoint="lg"
-        collapsedWidth="0"
-      >
+      <Sider breakpoint="lg" collapsedWidth="0">
         <Menu onClick={onClick} defaultSelectedKeys={["1"]} defaultOpenKeys={["/"]} mode="inline" items={items} />
       </Sider>
 

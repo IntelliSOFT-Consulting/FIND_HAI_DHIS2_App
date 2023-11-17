@@ -3,22 +3,28 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
-import { Input, Button, Space, Tag, Table, DatePicker } from "antd";
+import { Input, Button, Space, Tag, Table, DatePicker, Select } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
 import moment from "moment";
 import CardItem from "../components/CardItem";
-import { isValidDate } from "../lib/helpers";
+import { isValidDate, generateWeeks } from "../lib/helpers";
 
 const useStyles = createUseStyles({
   search: {
     marginBottom: "2rem",
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    display: "flex",
+    // gridTemplateColumns: "1fr 1fr",
     gap: "1rem",
     alignItems: "center",
+    "& > div, > span": {
+      width: "100% !important",
+    },
     "@media (max-width: 768px)": {
-      gridTemplateColumns: "1fr",
+        flexDirection: "column",
+        "& > div, > span": {
+            width: "100% !important",
+        },
     },
   },
   datePicker: {
@@ -39,6 +45,7 @@ const useStyles = createUseStyles({
 
 export default function Surgeries({ program, user, organisationUnits }) {
   const [instances, setInstances] = useState(null);
+  const [weeks, _] = useState(generateWeeks());
   const styles = useStyles();
   const navigate = useNavigate();
   const engine = useDataEngine();
@@ -73,7 +80,7 @@ export default function Surgeries({ program, user, organisationUnits }) {
           order: "created:desc",
           ouMode: "ALL",
           program: program?.id,
-          pageSize: 500,
+          pageSize: 100,
         },
       },
     };
@@ -220,7 +227,6 @@ export default function Surgeries({ program, user, organisationUnits }) {
       <div className={styles.search}>
         <Input.Search
           placeholder="Search surgeries using patient ID or surgery ID"
-          size="large"
           enterButton="Search"
           allowClear
           onChange={(e) => getSurgeriesDebounced(e.target.value)}
@@ -234,7 +240,22 @@ export default function Surgeries({ program, user, organisationUnits }) {
             }
           }}
           className={styles.datePicker}
-          size="large"
+        />
+        <Select
+          placeholder="Select a week"
+          onChange={(value) => {
+            if (value) {
+              getSurgeriesDebounced(value);
+            } else {
+              getSurgeriesDebounced();
+            }
+          }}
+          allowClear
+          style={{ width: "100%" }}
+          showSearch
+          optionFilterProp="children"
+          filterOption={(input, option) => option?.children?.toLowerCase()?.indexOf(input?.toLowerCase()) >= 0}
+          options={weeks}
         />
       </div>
       {!instances ? (

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Tooltip } from "antd";
 import InputItem from "./InputItem";
 import { createUseStyles } from "react-jss";
@@ -22,17 +22,18 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function RepeatForm({ Form, section,  }) {
+export default function RepeatForm({ Form, allValues, section, formValues }) {
   const classes = useStyles();
 
   const { getData, saveData } = UseDataStore();
   const { createEvent } = UseCreateEvent();
+  console.log("allValues: ", allValues);
 
   return (
     <Form.List name={section?.sectionId}>
       {(fields, { add }) => (
         <>
-          {fields.map((field) => (
+          {fields.map((field, index) => (
             <div className={classes.formList} key={field.key}>
               {section?.dataElements?.map((dataElement) => (
                 <Form.Item
@@ -40,6 +41,7 @@ export default function RepeatForm({ Form, section,  }) {
                   key={dataElement?.id}
                   label={dataElement?.name}
                   name={[field.name, dataElement?.id]}
+                  valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
                   rules={[
                     {
                       required: dataElement?.required,
@@ -47,7 +49,13 @@ export default function RepeatForm({ Form, section,  }) {
                     },
                   ]}
                   className={section?.dataElements?.length === 1 ? classes.fullWidth : null}
-                  
+                  // hidden={
+                  //   dataElement?.showif &&
+                  //   allValues?.[section?.sectionId] &&
+                  //   (!allValues?.[section?.sectionId][index]?.[dataElement?.showif] ||
+                  //     !allValues?.[section?.sectionId][index]?.[dataElement?.showif]?.includes("Other") ||
+                  //     allValues?.[section?.sectionId][index]?.[dataElement?.showif] !== true)
+                  // }
                 >
                   <InputItem
                     type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
@@ -57,9 +65,7 @@ export default function RepeatForm({ Form, section,  }) {
                     }))}
                     placeholder={`Enter ${dataElement.name}`}
                     name={dataElement.id}
-                    onChange={(value) => {
-                      
-                    }}
+                    defaultValue={formValues?.[section?.sectionId][index]?.[dataElement?.id]}
                   />
                 </Form.Item>
               ))}
@@ -72,7 +78,7 @@ export default function RepeatForm({ Form, section,  }) {
                 const mappings = await getData("repeatSections", "postOperative");
                 const event = await createEvent();
                 const payload = {
-                  parentEvent: '',
+                  parentEvent: "",
                   event: event?.event,
                 };
                 add();

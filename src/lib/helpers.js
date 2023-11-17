@@ -1,3 +1,4 @@
+import { format } from "date-fns";
 export function tableDataToObject(tableData) {
   const headers = tableData.headers.map((header) => ({
     name: header.name,
@@ -38,11 +39,10 @@ const formatAttributeValues = (attributes) => {
     };
   });
 
-  const attributeValuesObject = attributeValues.reduce((acc, attributeValue) => {
+  return attributeValues.reduce((acc, attributeValue) => {
     acc[attributeValue.name?.toLowerCase()] = attributeValue.value;
     return acc;
   }, {});
-  return attributeValuesObject;
 };
 
 export function formatRegistration(program) {
@@ -69,32 +69,41 @@ export function formatRegistration(program) {
 }
 
 export function formatSurgery(program) {
-  return program?.programStages?.map((stage) => {
+  const allStages = program?.programStages?.map((stage) => ({ ...stage, ...formatAttributeValues(stage?.attributeValues) }));
+  const mainStages = allStages.filter((stage) => !stage?.parentstage);
+  //   combine all stages with their children: children have the parentstage id under the parentstage key
+  const stages = mainStages.map((stage) => {
+    const children = allStages.filter((child) => child?.parentstage === stage?.id);
+    return { ...stage, children };
+  });
+
+  const formatStage = (stage) => {
     return {
       title: stage.name,
-      enrollment: false,
-      id: stage.id,
+      description: stage.description,
+      stageId: stage.id,
       repeatable: stage.repeatable,
-      ...formatAttributeValues(stage.attributeValues),
       sections: stage.programStageSections.map((section) => {
         return {
-          title: section.displayName,
+          name: section.displayName,
+          description: section.description,
           sectionId: section.id,
-          repeating: section.description === "repeating",
           dataElements: section.dataElements.map((dataElement) => {
             return {
               name: dataElement.displayName,
               id: dataElement.id,
               valueType: dataElement.valueType,
-              compulsory: dataElement.compulsory,
               optionSet: dataElement.optionSet,
               ...formatAttributeValues(dataElement.attributeValues),
             };
           }),
         };
       }),
+      children: stage.children?.map((child) => formatStage(child)),
     };
-  });
+  };
+
+  return stages.map((stage) => formatStage(stage));
 }
 
 export function generateId() {
@@ -133,4 +142,22 @@ export function statusColor(status) {
     default:
       return "grey";
   }
+}
+
+export function generateWeeks() {
+  const today = new Date();
+  const weeksArray = [];
+
+  for (let i = 1; i <= 10; i++) {
+    const startDate = new Date(today);
+    startDate.setDate(today.getDate() - 7 * i + 1);
+
+    const endDate = new Date(today);
+    endDate.setDate(today.getDate() - 7 * (i - 1));
+
+    const weekLabel = `Week ${i}`;
+    weeksArray.push({ label: weekLabel, value: `${format(new Date(startDate), "yyyy-MM-dd")}..${format(new Date(endDate), "yyyy-MM-dd")}` });
+  }
+
+  return weeksArray;
 }

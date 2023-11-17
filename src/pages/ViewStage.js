@@ -11,6 +11,7 @@ import { DoubleLeftOutlined } from "@ant-design/icons";
 import { createUseStyles } from "react-jss";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import UseViewData from "../hooks/UseViewData";
+import UseDataStore from "../hooks/useDataStore";
 
 const useStyles = createUseStyles({
   "@global": {
@@ -32,18 +33,55 @@ export default function ViewStage() {
 
   const { getEnrollmentData } = UseGetEnrollmentsData();
 
-  const { dataViewModel, setEnrollment } = UseViewData();
+  const { dataViewModel, setEnrollment, setEvents, events } = UseViewData();
+  const { getData } = UseDataStore();
 
   const { stage, enrollment, trackedEntityInstance } = useParams();
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
 
   const classes = useStyles();
 
+  const location = useLocation();
+
+  const parseQueryString = () => {
+    const queryString = location.search.substring(1);
+    const params = queryString.split("&");
+    const paramObject = {};
+
+    params.forEach((param) => {
+      const [key, value] = param.split("=");
+      paramObject[key] = value;
+    });
+
+    return paramObject;
+  };
+
+  const queryParams = parseQueryString();
+
   const stageForm = stages?.find((item) => item.id === stage);
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
+    const filteredEvents = await filterAndSortEvents(data?.events);
     setEnrollment(data);
+    setEvents(filteredEvents);
+  };
+
+  const filterAndSortEvents = async (events) => {
+    const mappings = await getData("repeatSections", "postOperative");
+
+    const repeatIds = stageForm?.children?.map((child) => child?.stageId);
+    return events
+        ?.filter((event) => {
+          if (queryParams.event) {
+            const repeatEvents = mappings
+                .filter((mapping) => mapping?.parentEvent === queryParams.event)
+                ?.map((mapping) => mapping?.event);
+            return event.event === queryParams.event || repeatEvents?.includes(event.event);
+          }
+          return event.programStage === stage || repeatIds?.includes(event.programStage);
+        })
+        ?.sort((a, b) => a.created - b.created);
   };
 
   useEffect(() => {
@@ -83,10 +121,10 @@ export default function ViewStage() {
   } else {
     content = (
       <>
-        {dataViewModel?.sections?.map((section) => (
-          <React.Fragment key={section.id}>
-            <Section title={section.title} />
-            <Table columns={columns} dataSource={section?.dataElements} pagination={false} bordered showHeader={false} />
+        {dataViewModel?.map((section, index) => (
+          <React.Fragment key={section.index}>
+            <Section title={section.name} />
+            <Table columns={columns} dataSource={section?.dataValues} pagination={false} bordered showHeader={false} />
           </React.Fragment>
         ))}
       </>

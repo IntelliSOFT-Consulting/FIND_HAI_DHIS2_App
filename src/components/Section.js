@@ -12,7 +12,6 @@ const useStyles = createUseStyles({
     display: "flex",
     flexDirection: "row",
     justifyContent: "space-between",
-    cursor: "pointer",
     backgroundColor: primary ? "#E5F1FA" : "#EAEEF0",
     fontSize: "14px",
     fontWeight: "500",

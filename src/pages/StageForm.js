@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Button, Spin, Breadcrumb } from "antd";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Breadcrumb, Spin } from "antd";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import { createUseStyles } from "react-jss";
@@ -17,8 +17,7 @@ import UseCreateEvent from "../hooks/useCreateEvent";
 import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
 import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
-import { formatValue } from "../lib/mapValues";
-import { createPayload } from "../lib/stages";
+import { formatForm } from "../lib/formFormatter";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -52,6 +51,7 @@ const dateFormat = "YYYY-MM-DD";
 
 export default function StageForm() {
   const [formValues, setFormValues] = useState(null);
+  const [forms, setForms] = useState(null);
   const [events, setEvents] = useState([]);
   const [enrollmentData, setEnrollmentData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -59,6 +59,23 @@ export default function StageForm() {
 
   const { stages, program } = useSelector((state) => state.forms);
   const { id } = useSelector((state) => state.orgUnit);
+
+  const location = useLocation();
+
+  const parseQueryString = () => {
+    const queryString = location.search.substring(1);
+    const params = queryString.split("&");
+    const paramObject = {};
+
+    params.forEach((param) => {
+      const [key, value] = param.split("=");
+      paramObject[key] = value;
+    });
+
+    return paramObject;
+  };
+
+  const queryParams = parseQueryString();
 
   const classes = useStyles();
   const navigate = useNavigate();
@@ -75,149 +92,43 @@ export default function StageForm() {
   const { completeEvent } = UseCompleteEvent();
   const { getEnrollmentData } = UseGetEnrollmentsData();
 
-  const stageForm = stages?.find((item) => item.id === stage);
+  const stageForm = stages?.find((item) => item.stageId === stage);
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
     setEnrollmentData(data);
 
     if (data?.status) {
-      const stageValues = filterAndSortEvents(data.events);
+      const stageValues = await filterAndSortEvents(data.events);
+      if (stageValues?.length > 0 && stageForm) {
+        const dataForm = await formatForm(stageForm, stageValues);
 
-      const eventForms = mapEventForms(stageValues);
-      const mappedValues = mapSectionValues(eventForms);
+        setForms(dataForm);
+      }
+    }
+  };
 
-      const initialValues = mergeSectionValues(mappedValues);
+  const filterAndSortEvents = async (events) => {
+    const mappings = await getData("repeatSections", "postOperative");
 
-      setEvents(stageValues);
-      localStorage.setItem("stageValues", JSON.stringify(initialValues));
-      for (const key in initialValues) {
-        if (initialValues.hasOwnProperty(key)) {
-          const value = initialValues[key];
-          if (Array.isArray(value)) {
-            initialValues[key] = value.map((item) => {
-              const newItem = {};
-              for (const key in item) {
-                if (item.hasOwnProperty(key)) {
-                  const newKey = key.split(".")[0];
-                  newItem[newKey] = item[key];
-                }
-              }
-              return newItem;
-            });
-          }
+    const repeatIds = stageForm?.children?.map((child) => child?.stageId);
+    return events
+      ?.filter((event) => {
+        if (queryParams.event) {
+          const repeatEvents = mappings
+            .filter((mapping) => mapping?.parentEvent === queryParams.event)
+            ?.map((mapping) => mapping?.event);
+          return event.event === queryParams.event || repeatEvents?.includes(event.event);
         }
-      }
-      setFormValues(initialValues);
-    }
-  };
-
-  const filterAndSortEvents = (events) => {
-    return events?.filter((event) => event.programStage === stage)?.sort((a, b) => a.created - b.created);
-  };
-
-  const mapEventForms = (stageValues) => {
-    return stageValues?.map((event) => {
-      const dataValues = event?.dataValues || [];
-      const dataMap = dataValues.reduce(
-        (acc, curr) => ({
-          ...acc,
-          [curr.dataElement]: curr.value,
-        }),
-        {}
-      );
-      return { ...event, ...dataMap };
-    });
-  };
-
-  const mapSectionValues = (eventForms) => {
-    return stageForm?.sections?.map((section) => {
-      if (section?.repeating) {
-        const sectionIds = section.dataElements.map((item) => item.id);
-        const sectionData = eventForms
-          ?.map((event) => {
-            return sectionIds.reduce((acc, curr) => {
-              acc[`${curr}.${event?.event}`] = event?.[curr];
-              return acc;
-            }, {});
-          })
-          .filter((item) => Object.values(item).filter((item) => item || item?.toString() === "false")?.length > 0);
-        return {
-          [section.sectionId]: sectionData?.length > 0 ? sectionData : [{}],
-        };
-      }
-      return section?.dataElements?.reduce((acc, dataElement) => {
-        const value = findNonNullValue(eventForms, dataElement.id);
-        acc[dataElement.id] = formatValue(value);
-        return acc;
-      }, {});
-    });
-  };
-
-  const findNonNullValue = (eventForms, dataElementId) => {
-    return (
-      eventForms?.find((item) => item?.[dataElementId] !== null && item?.[dataElementId] !== undefined)?.[dataElementId] || null
-    );
-  };
-
-  const mergeSectionValues = (mappedValues) => {
-    return mappedValues?.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-  };
-
-  const handleChange = async (value) => {
-    const valueKey = Object.keys(value)[0];
-    const valueObject = value[valueKey];
-    await saveValue(events[0]?.event, valueObject, valueKey, id, program, stage);
-  };
-
-  const handleFinish = async (values, event) => {
-    setLoading(true);
-    try {
-      const mainEvent = events[0]?.event;
-      const submissions = createPayload(values);
-      const mappings = await getData("repeatSections", "postOperative");
-
-      const newFields = submissions.filter((item) => item.status)?.filter((item) => item.dataValues?.length > 0);
-      const updateFields = submissions.filter((item) => item.event)?.filter((item) => item.dataValues?.length > 0);
-
-      const newEvents = await Promise.all(
-        newFields.map(async (item) => {
-          const response = await createEvent(stage, item.dataValues);
-          if (response) {
-            const newMapping = {
-              parentEvent: mainEvent,
-              event: response,
-            };
-            mappings.push(newMapping);
-          }
-          return response;
-        })
-      );
-
-      const updateEvents = await Promise.all(
-        updateFields.map(async (item) => {
-          const response = await completeEvent(item.event, id, program, stage, item.dataValues, "ACTIVE");
-          return response;
-        })
-      );
-
-      await saveData("repeatSections", "postOperative", mappings);
-
-      setSuccess("Event saved successfully");
-      const timeout = setTimeout(() => {
-        setSuccess(null);
-      }, 2000);
-
-      () => clearTimeout(timeout);
-
-      navigate(surgeryLink);
-    } catch (error) {
-      console.log(error);
-    }
+        return event.programStage === stage || repeatIds?.includes(event.programStage);
+      })
+      ?.sort((a, b) => a.created - b.created);
   };
 
   useEffect(() => {
-    getEnrollment();
+    if (stageForm) {
+      getEnrollment();
+    }
   }, [stageForm]);
 
   return (
@@ -238,19 +149,12 @@ export default function StageForm() {
         ]}
       />
       <CardItem title={stageForm?.title}>
-        {!formValues ? (
+        {!forms ? (
           <CircularLoader />
         ) : (
           <Spin spinning={loading}>
             <div className={classes.stage}>
-              <Stage
-                stageForm={stageForm}
-                handleChange={handleChange}
-                handleFinish={handleFinish}
-                formValues={formValues}
-                repeatable={stageForm?.repeatable && stageForm?.repeattype !== "section"}
-                surgeryLink={surgeryLink}
-              />
+              <Stage forms={forms} surgeryLink={surgeryLink} setForms={setForms} />
             </div>
           </Spin>
         )}

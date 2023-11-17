@@ -1,18 +1,20 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Badge } from "antd";
+import { Table, Button, Badge, Breadcrumb } from "antd";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import UseCreateEvent from "../hooks/useCreateEvent";
 import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
+import UseDataStore from "../hooks/useDataStore";
 import { formatValues } from "../lib/mapValues";
 import Section from "../components/Section";
 import moment from "moment";
 import { createUseStyles } from "react-jss";
-import { PlusOutlined } from "@ant-design/icons";
+import { DoubleLeftOutlined, PlusOutlined } from "@ant-design/icons";
 import { statusColor } from "../lib/helpers";
 import { CircularLoader } from "@dhis2/ui";
 import Overdue from "../components/Overdue";
+import EditSurgeryDetails from "../components/EditSurgeryDetails";
 import { getFullEvents, isAddStageActive } from "../lib/stages";
 
 const useStyles = createUseStyles({
@@ -45,10 +47,11 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function SurgeryForm() {
+export default function SurgeryForm({ history }) {
   const [enrollmentData, setEnrollmentData] = useState(null);
   const [formValues, setFormValues] = useState(null);
   const [showOverdue, setShowOverdue] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const { registration, stages, trackedEntity, program } = useSelector((state) => state.forms);
 
@@ -58,15 +61,16 @@ export default function SurgeryForm() {
   const navigate = useNavigate();
 
   const { getEnrollmentData } = UseGetEnrollmentsData();
-  const { createEvent } = UseCreateEvent();
+  const { createEvent, createStageEvents } = UseCreateEvent();
   const { updateEnrollment } = UseUpdateEnrollment();
+  const { getData, saveData } = UseDataStore();
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
     setEnrollmentData(data);
     const enrollmentValues = formatValues(registration, data);
     const stagesValues = stages?.map((stage) => {
-      const stageValues = data?.events?.filter((event) => event.programStage === stage.id);
+      const stageValues = data?.events?.filter((event) => event.programStage === stage.stageId);
 
       return {
         ...stage,
@@ -100,6 +104,7 @@ export default function SurgeryForm() {
       title: "Name",
       dataIndex: "name",
       key: "name",
+      width: "40%",
     },
     {
       title: "Value",
@@ -111,6 +116,24 @@ export default function SurgeryForm() {
         }
         return text;
       },
+      width: "60%",
+    },
+    {
+      title: "Actions",
+      dataIndex: "actions",
+      key: "actions",
+      render: (text, record) => {
+        const params = record?.repeatable && record?.repeattype !== "section" ? `?event=${record?.event}` : "";
+        return (
+          <div>
+            {enrollmentData?.status === "ACTIVE" && (
+              <Button type="link" onClick={() => setOpen(true)}>
+                Edit
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -121,7 +144,6 @@ export default function SurgeryForm() {
       key: "created",
       render: (text) => moment(text).format("YYYY-MM-DD"),
     },
-
     {
       title: "Actions",
       dataIndex: "actions",
@@ -144,19 +166,32 @@ export default function SurgeryForm() {
     },
   ];
 
-  const addEvent = async (stage) => {
+  const addEvent = async (stage, isNew = false) => {
     const emptyEvent = stage?.events?.find((event) => event?.dataValues?.length === 0 || !event?.dataValues)?.event;
 
     let params = "";
 
-    if (emptyEvent) {
-      params = stage?.repeatable && stage?.repeattype !== "section" ? `?event=${emptyEvent}` : "";
-      return navigate(`/surgery/${stage.id}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
+    if (emptyEvent && !isNew) {
+      params = stage?.repeatable ? `?event=${emptyEvent}` : "";
+      return navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
-    const event = await createEvent(stage.id);
-    if (event) {
-      params = stage?.repeatable && stage?.repeattype !== "section" ? `?event=${event}` : "";
-      navigate(`/surgery/${stage.id}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
+
+    const mappings = await await getData("repeatSections", "postOperative");
+
+    const childStages = stage?.children?.map((child) => child?.stageId);
+    const stageIds = [stage.stageId, ...childStages];
+    const events = await createStageEvents(stageIds, []);
+    if (events) {
+      // remove first event and remain with the rest
+      const newMappings = events.slice(1).map((event) => {
+        return {
+          parentEvent: events[0],
+          event,
+        };
+      });
+      await saveData("repeatSections", "postOperative", [...mappings, ...newMappings]);
+      params = stage?.repeatable && stage?.repeattype !== "section" ? `?event=${events[0]}` : "";
+      navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
   };
 
@@ -214,17 +249,29 @@ export default function SurgeryForm() {
         <CircularLoader />
       ) : (
         <div>
+          <Breadcrumb
+            separator={<DoubleLeftOutlined />}
+            style={{ marginBottom: "1rem" }}
+            items={[
+              {
+                title: <Link to="/surgeries">Surgeries</Link>,
+              },
+              {
+                title: "Surgery Details",
+              },
+            ]}
+          />
           <Badge.Ribbon
             text={
               enrollmentData?.status === "ACTIVE" ? "ACTIVE" : enrollmentData?.status === "COMPLETED" ? "COMPLETED" : "CLOSED"
             }
             color={statusColor(enrollmentData?.status)}
           >
-            <Section title="Surgery Details" primary />
+            <Section title="SURGERY SUMMARY" primary />
           </Badge.Ribbon>
           {formValues?.enrollmentValues?.map((section, index) => (
             <>
-              <Section title={section.title} key={index} padded />
+              <Section title={section.title?.replace("SURGERY SUMMARY", "")} key={index} padded />
               <Table
                 columns={columns}
                 dataSource={section.dataElements}
@@ -250,7 +297,7 @@ export default function SurgeryForm() {
                   </div>
                 }
               />
-              {stage?.repeattype === "section"
+              {!stage?.repeatable
                 ? stage?.events?.slice(0, 1)?.map((event, i) => (
                     <div className={classes.event} key={i}>
                       <Table
@@ -263,7 +310,7 @@ export default function SurgeryForm() {
                       />
                     </div>
                   ))
-                : getFullEvents(stage)?.events?.map(
+                : getFullEvents(enrollmentData, stage)?.events?.map(
                     (event, i) =>
                       event?.dataValues && (
                         <div className={classes.event} key={i}>
@@ -279,18 +326,27 @@ export default function SurgeryForm() {
                       )
                   )}
 
-              {isAddStageActive(stage, enrollmentData) && (
-                <div className={classes.newEvent}>
-                  <Button onClick={() => addEvent(stage)} type="dashed" icon={<PlusOutlined />} block>
-                    Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
-                  </Button>
-                </div>
-              )}
+              {stage?.repeatable &&
+                stage?.title?.toLowerCase()?.includes("post-operative") &&
+                getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
+                  <div className={classes.newEvent}>
+                    <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
+                      Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
+                    </Button>
+                  </div>
+                )}
             </div>
           ))}
         </div>
       )}
       <Overdue overdue={showOverdue} setOverdue={setShowOverdue} onFinish={handleOverdue} />
+      <EditSurgeryDetails
+        open={open}
+        setOpen={setOpen}
+        onClose={() => setOpen(false)}
+        enrollment={enrollmentData}
+        getEnrollment={getEnrollment}
+      />
     </>
   );
 }
