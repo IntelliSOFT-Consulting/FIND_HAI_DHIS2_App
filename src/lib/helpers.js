@@ -167,3 +167,35 @@ export function generateWeeks() {
 
   return weeksArray;
 }
+
+export const evaluateShowIf = (str, formValues) => {
+    if (!str) return true;
+    const [fieldId, operator, value] = str.split(":");
+    const fieldValue = formValues[fieldId]?.toString()?.toLowerCase();
+    const valueArray = value?.split(",").map((item) => item?.toLowerCase());
+
+    switch (operator) {
+      case "eq":
+        return fieldValue === value;
+      case "ne":
+        return fieldValue !== value;
+      case "gt":
+        return fieldValue > value;
+      case "ge":
+        return fieldValue >= value;
+      case "lt":
+        return fieldValue < value;
+      case "le":
+        return fieldValue <= value;
+      case "like":
+        return fieldValue?.includes(value);
+      case "notin":
+        return !valueArray?.includes(fieldValue);
+      case "null":
+        return !fieldValue;
+      case "notnull":
+        return fieldValue;
+      default:
+        return false;
+    }
+};

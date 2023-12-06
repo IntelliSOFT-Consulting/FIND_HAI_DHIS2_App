@@ -1,7 +1,7 @@
 import InputItem from "./InputItem";
 import React, { useState, useEffect } from "react";
 import { createUseStyles } from "react-jss";
-import {isValidDate} from "../lib/helpers";
+import { evaluateShowIf } from "../lib/helpers";
 
 const useStyles = createUseStyles({
   form: {
@@ -54,15 +54,6 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
   const [formValues, setFormValues] = useState({});
   const classes = useStyles();
 
-  const evaluateShowIf = (showIf, formValues, fieldName) => {
-    const showIfValue = formValues[showIf]?.toString()?.toLowerCase();
-
-    if (showIfValue === "no" || showIfValue === 'false' || showIfValue === 'none given') return false;
-    if (showIfValue === 'true' || showIfValue?.includes("other")) return true;
-    if (showIfValue && showIfValue !== "none given" && fieldName?.toLowerCase()?.includes('reason for')) return true;
-    return showIfValue !== "no" && fieldName?.toLowerCase()?.includes('date');
-  };
-
   const setInitialValues = async () => {
     const values = {};
     for (const dataElement of section?.dataElements) {
@@ -78,7 +69,7 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
   return (
     <div className={`${classes.form} ${form.repeatable ? classes.formList + " " + classes.fullWidth : ""}`}>
       {section.dataElements.map((dataElement, index) => {
-        const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues, dataElement.name);
+        const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
         return shouldShow ? (
           <Form.Item
             key={index}

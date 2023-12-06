@@ -14,6 +14,7 @@ import { debounce } from "lodash";
 import SectionForm from "./SectionForm";
 import Alert from "./Alert";
 import { useSelector } from "react-redux";
+import {evaluateShowIf} from "../lib/helpers";
 
 const useStyles = createUseStyles({
   form: {
@@ -95,13 +96,17 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) 
   const debouncedSaveValue = debounce(async (value, dataElement, section) => {
     const valueKey = dataElement.id;
 
-    // look if dataElement valueKey is included in showif in any of the dataElements. If it is and the value is false then set the value to null
-    const showif = formDataElements?.find((element) => element.showif?.includes(valueKey));
+    const showif = formDataElements?.find((element) => {
+      const key = element.showif ? element.showif?.split(":")[0] : null;
+      return key?.includes(valueKey);
+    });
 
-    if (showif && (!value || value === 'No' || !value?.toLowerCase()?.includes('other'))) {
+    console.log(showif)
+    console.log('Evaluation: ', evaluateShowIf(showif?.showif, { [valueKey]: value }))
+
+    if (showif && !evaluateShowIf(showif?.showif, { [valueKey]: value }) ) {
       await saveValue(section.event, null, showif?.id, section.orgUnit, section.program, section.programStage);
     }
-
 
     await saveValue(section.event, value, valueKey, section.orgUnit, section.program, section.programStage);
   }, 500);

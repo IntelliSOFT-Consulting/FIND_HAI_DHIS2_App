@@ -10,7 +10,7 @@ import ErrorModal from "../components/ErrorModal";
 import { useNavigate } from "react-router-dom";
 import UseFindPatientInstance from "../hooks/useFindPatientInstance";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
-import { generateId } from "../lib/helpers";
+import {evaluateShowIf, generateId} from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
@@ -107,14 +107,6 @@ export default function Register() {
     }
   }, [dataElements]);
 
-  const evaluateShowIf = (showIf, formValues, fieldName) => {
-    const showIfValue = formValues[showIf]?.toString()?.toLowerCase();
-
-    if (showIfValue === "no" || showIfValue === "false" || showIfValue === "none given") return false;
-    if (showIfValue === "true" || showIfValue?.includes("other")) return true;
-    if (showIfValue && showIfValue !== "none given" && fieldName?.toLowerCase()?.includes("reason for")) return true;
-    return showIfValue !== "no" && fieldName?.toLowerCase()?.includes("date");
-  };
 
   const register = async (values) => {
     const payload = {
@@ -198,7 +190,7 @@ export default function Register() {
                   },
                   dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
                 ].filter((rule) => rule !== null);
-                const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues, dataElement.name);
+                const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
                 return shouldShow ? (
                   <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
                     <InputItem
