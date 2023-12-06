@@ -1,6 +1,6 @@
 import { createStore, combineReducers, applyMiddleware, compose } from "redux";
 import thunk from "redux-thunk";
-import { formsReducer, programValuesReducer, searchFieldsReducer, orgUnitReducer } from "./reducer";
+import { formsReducer, programValuesReducer, searchFieldsReducer, orgUnitReducer, userReducer } from "./reducer";
 
 const searchFields = localStorage.getItem("searchFields") ? JSON.parse(localStorage.getItem("searchFields")) : null;
 
@@ -13,6 +13,7 @@ const reducer = combineReducers({
   programValues: programValuesReducer,
   searchFields: searchFieldsReducer,
   orgUnit: orgUnitReducer,
+  user: userReducer,
 });
 
 const composeEnhancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;

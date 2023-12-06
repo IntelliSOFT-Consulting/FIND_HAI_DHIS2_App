@@ -14,6 +14,7 @@ import { generateId } from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
+import useGetProgramInstances from "../hooks/useGetProgramInstances";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -33,6 +34,10 @@ const useStyles = createUseStyles({
 
 export default function Register() {
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [formValues, setFormValues] = useState({});
+  const [enrollments, setEnrollments] = useState(null);
+
   const { registration, trackedEntityType, program } = useSelector((state) => state.forms);
   const { id } = useSelector((state) => state.orgUnit);
   const classes = useStyles();
@@ -44,6 +49,7 @@ export default function Register() {
 
   const { findPatientInstance } = UseFindPatientInstance();
   const { getEnrollmentData } = UseGetEnrollmentsData();
+  const { searchPatient } = useGetProgramInstances();
 
   const getConflicts = (error, registration) => {
     const importSummaries = error?.response?.importSummaries;
@@ -87,10 +93,11 @@ export default function Register() {
     }));
   });
   const uniqueId = generateId();
+  const patientId = dataElements?.find((dataElement) => dataElement.name === "Patient ID");
+
   useEffect(() => {
     if (dataElements?.length === 0) return;
     const secondaryIdField = dataElements?.find((dataElement) => dataElement.name === "Secondary ID");
-
     const secondaryId = form.getFieldValue(secondaryIdField?.id);
 
     if (!secondaryId) {
@@ -100,7 +107,16 @@ export default function Register() {
     }
   }, [dataElements]);
 
-  const onFinish = async (values) => {
+  const evaluateShowIf = (showIf, formValues, fieldName) => {
+    const showIfValue = formValues[showIf]?.toString()?.toLowerCase();
+
+    if (showIfValue === "no" || showIfValue === "false" || showIfValue === "none given") return false;
+    if (showIfValue === "true" || showIfValue?.includes("other")) return true;
+    if (showIfValue && showIfValue !== "none given" && fieldName?.toLowerCase()?.includes("reason for")) return true;
+    return showIfValue !== "no" && fieldName?.toLowerCase()?.includes("date");
+  };
+
+  const register = async (values) => {
     const payload = {
       trackedEntityType: trackedEntityType?.id,
       orgUnit: id,
@@ -129,12 +145,42 @@ export default function Register() {
 
       if (response?.status === "SUCCESS") {
         const trackedEntityInstance = await getEnrollmentData(response?.importSummaries[0]?.reference, true);
-
+        setLoading(false);
         navigate(`/surgery/${response?.importSummaries[0]?.reference}/${trackedEntityInstance?.enrollment}`);
       }
     } catch (error) {
       const conflicts = getConflicts(error?.details, registration);
       setError(conflicts);
+      setLoading(false);
+    }
+  };
+
+  const onFinish = async (values) => {
+    setLoading(true);
+    const patientEnrollments = await searchPatient(program, patientId?.id, values[patientId?.id]);
+    if (patientEnrollments?.length > 0) {
+      setEnrollments(patientEnrollments);
+      return;
+    }
+    await register(values);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const dataElements = registration?.sections?.flatMap((section) => {
+      return section?.dataElements?.map((dataElement) => ({
+        id: dataElement.id,
+        name: dataElement.name,
+      }));
+    });
+
+    const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
+    if (name === dateOfBirthField?.id) {
+      const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
+      const age = dayjs().diff(dayjs(value), "year");
+      form.setFieldsValue({
+        [ageField?.id]: age,
+      });
     }
   };
   return (
@@ -144,38 +190,50 @@ export default function Register() {
           <>
             <Section key={section.title} title={section.title} />
             <div className={classes.form}>
-              {section?.dataElements?.map((dataElement) => (
-                <Form.Item
-                  key={dataElement.id}
-                  label={dataElement.name}
-                  name={dataElement.id}
-                  rules={[
-                    {
-                      required: dataElement.required,
-                      message: `Please input ${dataElement.displayName}!`,
-                    },
-                    dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
-                  ]}
-                >
-                  <InputItem
-                    type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
-                    options={dataElement.optionSet?.options?.map((option) => ({
-                      label: option.name,
-                      value: option.code,
-                    }))}
-                    placeholder={`Enter ${dataElement.name}`}
-                    name={dataElement.id}
-                  />
-                </Form.Item>
-              ))}
+              {section?.dataElements?.map((dataElement) => {
+                const rules = [
+                  {
+                    required: dataElement.required,
+                    message: `Please input ${dataElement.displayName}!`,
+                  },
+                  dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
+                ].filter((rule) => rule !== null);
+                const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues, dataElement.name);
+                return shouldShow ? (
+                  <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
+                    <InputItem
+                      type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
+                      options={dataElement.optionSet?.options?.map((option) => ({
+                        label: option.name,
+                        value: option.code,
+                      }))}
+                      placeholder={`Enter ${dataElement.name}`}
+                      name={dataElement.id}
+                      onChange={(e) => {
+                        const name = e?.target?.name || dataElement.id;
+                        const value = e?.target?.value || e;
+                        const allFormValues = form.getFieldsValue();
+                        setFormValues(allFormValues);
+                        handleChange({ target: { name, value } });
+                      }}
+                      disabled={
+                        dataElement?.name?.toLowerCase()?.includes("age") ||
+                        dataElement?.name?.toLowerCase()?.includes("secondary id")
+                      }
+                    />
+                  </Form.Item>
+                ) : null;
+              })}
             </div>
           </>
         ))}
-        <Button type="primary" htmlType="submit">
+        <Button type="primary" htmlType="submit" loading={loading} disabled={loading}>
           Submit
         </Button>
       </Form>
-      {error && <ErrorModal error={error} setError={setError} />}
+      {enrollments && (
+        <ErrorModal setLoading={setLoading} enrollments={enrollments} setEnrollments={setEnrollments} enroll={register} values={formValues} />
+      )}
     </CardItem>
   );
 }

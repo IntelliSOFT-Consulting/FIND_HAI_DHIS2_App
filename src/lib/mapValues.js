@@ -15,6 +15,13 @@ export const formatValue = (value) => {
   return value;
 };
 
+export const formatDisplayValue = (value) => {
+  if (value === "true") return "Yes";
+  if (value === "false") return "No";
+  if (isValidDate(value)) return dayjs(value).format("DD MMM YYYY");
+  return value;
+};
+
 export const formatValues = (form, dataValues) => {
   const dataElements = form?.sections?.map((section) => {
     if (form.enrollment) {

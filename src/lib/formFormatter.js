@@ -4,6 +4,8 @@ const processSection = (section, event) => {
   const { event: ev, status, trackedEntityInstance, enrollment, enrollmentStatus, orgUnit, program, programStage } = event;
 
   return {
+    title: section.title,
+    stageId: event.programStage,
     event: ev,
     status,
     trackedEntityInstance,
@@ -23,9 +25,9 @@ const processSection = (section, event) => {
 };
 
 export const formatForm = (form, events) => {
-  const mainEventValue = events?.find((event) => event.programStage === form.stageId);
+  const mainEventValue = events?.find((event) => event.programStage === form.stageId && form.sections) || {};
 
-  form.sections = form?.sections?.map((section) => mainEventValue && processSection(section, mainEventValue));
+  form.sections = form?.sections?.map((section) => mainEventValue && processSection(section, mainEventValue)) || [];
 
   const childrenFormsDataFlattened = (form?.children || []).flatMap((childForm) =>
     (events || [])

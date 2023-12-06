@@ -1,17 +1,19 @@
-import React, { useState } from "react";
-import { Button, Form } from "antd";
+import React, { useState, useEffect } from "react";
+import { Button } from "antd";
 import { createUseStyles } from "react-jss";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import Section from "./Section";
-import InputItem from "./InputItem";
 import { PlusCircleOutlined } from "@ant-design/icons";
 import UseCreateEvent from "../hooks/useCreateEvent";
 import UseGetEvent from "../hooks/useGetEvent";
 import UseSaveValue from "../hooks/useSaveValue";
 import UseDataStore from "../hooks/useDataStore";
+import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
 import { formatValue } from "../lib/mapValues";
 import { debounce } from "lodash";
 import SectionForm from "./SectionForm";
+import Alert from "./Alert";
+import { useSelector } from "react-redux";
 
 const useStyles = createUseStyles({
   form: {
@@ -60,23 +62,85 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Stage({ forms, setForms, surgeryLink }) {
+export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) {
   const [loading, setLoading] = useState(false);
-  const [formValues, setFormValues] = useState(null);
+  const [validate, setValidate] = useState(false);
+  const [validationErrors, setValidationErrors] = useState([]);
+  const [alert, setAlert] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [checked, setChecked] = useState(false);
+
+  const { stages } = useSelector((state) => state.forms);
+
+  const { stage: stageId, enrollment } = useParams();
 
   const classes = useStyles();
   const navigate = useNavigate();
-  const [form] = Form.useForm();
   const { createEvent } = UseCreateEvent();
   const { getEvent } = UseGetEvent();
   const { saveValue } = UseSaveValue();
   const { getData, saveData } = UseDataStore();
+  const { updateEnrollment } = UseUpdateEnrollment();
+
+  const stageForm = stages?.find((form) => form.stageId === stageId);
+
+  const formDataElements = stageForm?.sections?.flatMap((section) => {
+    return section?.dataElements?.map((dataElement) => ({
+      id: dataElement.id,
+      name: dataElement.name,
+      showif: dataElement.showif,
+    }));
+  });
 
   const debouncedSaveValue = debounce(async (value, dataElement, section) => {
     const valueKey = dataElement.id;
 
+    // look if dataElement valueKey is included in showif in any of the dataElements. If it is and the value is false then set the value to null
+    const showif = formDataElements?.find((element) => element.showif?.includes(valueKey));
+
+    if (showif && (!value || value === 'No' || !value?.toLowerCase()?.includes('other'))) {
+      await saveValue(section.event, null, showif?.id, section.orgUnit, section.program, section.programStage);
+    }
+
+
     await saveValue(section.event, value, valueKey, section.orgUnit, section.program, section.programStage);
   }, 500);
+
+  const completeEnrollment = async () => {
+    try {
+      const formName = stages?.find((form) => form.stageId === stageId)?.title;
+      if (formName?.toLowerCase()?.includes("outcome")) {
+        const payload = {
+          ...enrollmentData,
+          status: "COMPLETED",
+          completedDate: new Date().toISOString(),
+        };
+        await updateEnrollment(enrollment, payload);
+        navigate(surgeryLink);
+      } else {
+        navigate(surgeryLink);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (validationErrors?.length && isValidating) {
+        setAlert("Please fill in all required fields");
+        const timer = setTimeout(() => {
+          setAlert(null);
+        }, 2000);
+        setIsValidating(false);
+        return () => clearTimeout(timer);
+      } else if (validationErrors?.length === 0 && isValidating) {
+        setAlert(null);
+        completeEnrollment();
+      }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [validationErrors, isValidating]);
 
   return (
     <div>
@@ -84,11 +148,22 @@ export default function Stage({ forms, setForms, surgeryLink }) {
         {forms?.map((form, formIndex) => (
           <React.Fragment key={formIndex}>
             {form.sections
-              ? form.sections?.map((section, sectionIndex) => (
-                  <SectionForm key={sectionIndex} section={section} saveValue={debouncedSaveValue} />
-                ))
+              ? form.sections?.map((section, sectionIndex) => {
+                  return (
+                    <SectionForm
+                      key={sectionIndex}
+                      section={section}
+                      saveValue={debouncedSaveValue}
+                      validate={validate}
+                      validationErrors={validationErrors}
+                      setValidationErrors={setValidationErrors}
+                      setIsValidating={setIsValidating}
+                      isLastSection={sectionIndex === form.sections?.length - 1 && Array.isArray(forms[forms?.length - 1])}
+                    />
+                  );
+                })
               : Object.entries(form).map(([sectionName, formItems], sectionIndex) => (
-                  <React.Fragment key={sectionIndex} layout="vertical">
+                  <React.Fragment key={sectionIndex}>
                     <Section title={sectionName} />
                     {formItems.map((formItem, formItemIndex) => (
                       <>
@@ -98,6 +173,11 @@ export default function Stage({ forms, setForms, surgeryLink }) {
                             saveValue={debouncedSaveValue}
                             section={section}
                             className={classes.formList}
+                            validate={validate}
+                            validationErrors={validationErrors}
+                            setValidationErrors={setValidationErrors}
+                            setIsValidating={setIsValidating}
+                            isLastSection={index === formItem.sections?.length - 1}
                           />
                         ))}
                       </>
@@ -177,9 +257,21 @@ export default function Stage({ forms, setForms, surgeryLink }) {
         <Button className={classes.cancelButton} onClick={() => navigate(surgeryLink)}>
           Cancel
         </Button>
-        <Button className={classes.submitButton} onClick={() => navigate(surgeryLink)}>
+        <Button
+          className={classes.submitButton}
+          onClick={async () => {
+            setChecked(true);
+            setValidate(true);
+            setIsValidating(true);
+            setTimeout(() => {
+              setValidate(false);
+            }, 1000);
+          }}
+          loading={isValidating}
+        >
           Submit
         </Button>
+        {alert && <Alert critical>{alert}</Alert>}
       </div>
     </div>
   );

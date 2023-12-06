@@ -10,12 +10,12 @@ import { formatValues } from "../lib/mapValues";
 import Section from "../components/Section";
 import moment from "moment";
 import { createUseStyles } from "react-jss";
-import { DoubleLeftOutlined, PlusOutlined } from "@ant-design/icons";
+import { DoubleLeftOutlined, PlusOutlined, EditOutlined } from "@ant-design/icons";
 import { statusColor } from "../lib/helpers";
 import { CircularLoader } from "@dhis2/ui";
 import Overdue from "../components/Overdue";
 import EditSurgeryDetails from "../components/EditSurgeryDetails";
-import { getFullEvents, isAddStageActive } from "../lib/stages";
+import { getFullEvents } from "../lib/stages";
 
 const useStyles = createUseStyles({
   "@global": {
@@ -45,6 +45,14 @@ const useStyles = createUseStyles({
   event: {
     margin: "1rem 0px",
   },
+  edit: {
+    display: "flex",
+    justifyContent: "center",
+    color: "#2C6693!important",
+    "& > button": {
+      color: "#2C6693!important",
+    },
+  },
 });
 
 export default function SurgeryForm({ history }) {
@@ -54,6 +62,7 @@ export default function SurgeryForm({ history }) {
   const [open, setOpen] = useState(false);
 
   const { registration, stages, trackedEntity, program } = useSelector((state) => state.forms);
+  const user = useSelector((state) => state.user);
 
   const classes = useStyles();
 
@@ -71,19 +80,20 @@ export default function SurgeryForm({ history }) {
     const enrollmentValues = formatValues(registration, data);
     const stagesValues = stages?.map((stage) => {
       const stageValues = data?.events?.filter((event) => event.programStage === stage.stageId);
-
       return {
         ...stage,
         events: stageValues?.map((stageValue) => {
           return {
             repeatable: stage?.repeatable,
             repeattype: stage?.repeattype,
+            title: stage.title,
             ...(stageValue?.dataValues?.length > 0
               ? stageValue
               : {
                   event: stageValue?.event,
                   status: stageValue?.status,
                   programStage: stageValue?.programStage,
+                  title: stage.title,
                 }),
           };
         }),
@@ -118,23 +128,6 @@ export default function SurgeryForm({ history }) {
       },
       width: "60%",
     },
-    {
-      title: "Actions",
-      dataIndex: "actions",
-      key: "actions",
-      render: (text, record) => {
-        const params = record?.repeatable && record?.repeattype !== "section" ? `?event=${record?.event}` : "";
-        return (
-          <div>
-            {enrollmentData?.status === "ACTIVE" && (
-              <Button type="link" onClick={() => setOpen(true)}>
-                Edit
-              </Button>
-            )}
-          </div>
-        );
-      },
-    },
   ];
 
   const stageColumns = [
@@ -149,13 +142,17 @@ export default function SurgeryForm({ history }) {
       dataIndex: "actions",
       key: "actions",
       render: (text, record) => {
-        const params = record?.repeatable && record?.repeattype !== "section" ? `?event=${record?.event}` : "";
+        const params =
+          record?.repeatable && record?.title?.toLowerCase()?.includes("post-operative") ? `?event=${record?.event}` : "";
+        const userCanEdit = user?.userRoles?.some((role) =>
+          ["superuser", "administrator", "admin", "pca - administrator"].includes(role?.displayName?.toLowerCase())
+        );
         return (
           <div>
             <Link to={`/surgery/${record.programStage}/enrollment/${enrollment}/tei/${trackedEntityInstance}/view${params}`}>
               <Button type="link">View</Button>
             </Link>
-            {enrollmentData?.status === "ACTIVE" && (
+            {(enrollmentData?.status === "ACTIVE" || userCanEdit) && (
               <Link to={`/surgery/${record.programStage}/enrollment/${enrollment}/tei/${trackedEntityInstance}/edit${params}`}>
                 <Button type="link">Edit</Button>
               </Link>
@@ -171,15 +168,19 @@ export default function SurgeryForm({ history }) {
 
     let params = "";
 
+    const isRepeat = stage?.repeatable && stage.title?.toLowerCase()?.includes("post-operative");
     if (emptyEvent && !isNew) {
-      params = stage?.repeatable ? `?event=${emptyEvent}` : "";
+      params = isRepeat ? `?event=${emptyEvent}` : "";
       return navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
 
-    const mappings = await await getData("repeatSections", "postOperative");
+    let mappings = await getData("repeatSections", "postOperative");
+    if (!Array.isArray(mappings)) {
+      mappings = [];
+    }
 
     const childStages = stage?.children?.map((child) => child?.stageId);
-    const stageIds = [stage.stageId, ...childStages];
+    const stageIds = stage?.sections?.length ? [stage.stageId, ...childStages] : childStages;
     const events = await createStageEvents(stageIds, []);
     if (events) {
       // remove first event and remain with the rest
@@ -190,7 +191,7 @@ export default function SurgeryForm({ history }) {
         };
       });
       await saveData("repeatSections", "postOperative", [...mappings, ...newMappings]);
-      params = stage?.repeatable && stage?.repeattype !== "section" ? `?event=${events[0]}` : "";
+      params = isRepeat ? `?event=${events[0]}` : "";
       navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
   };
@@ -280,6 +281,19 @@ export default function SurgeryForm({ history }) {
                 size="small"
                 showHeader={false}
                 bordered
+                footer={
+                  index === formValues?.enrollmentValues?.length - 1
+                    ? () => (
+                        <div className={classes.edit}>
+                          {enrollmentData?.status === "ACTIVE" && (
+                            <Button type="link" onClick={() => setOpen(true)} icon={<EditOutlined />}>
+                              Edit Surgery Details
+                            </Button>
+                          )}
+                        </div>
+                      )
+                    : false
+                }
               />
             </>
           ))}
@@ -297,7 +311,7 @@ export default function SurgeryForm({ history }) {
                   </div>
                 }
               />
-              {!stage?.repeatable
+              {!stage?.repeatable || (stage?.repeatable && !stage?.title?.toLowerCase()?.includes("post-operative"))
                 ? stage?.events?.slice(0, 1)?.map((event, i) => (
                     <div className={classes.event} key={i}>
                       <Table

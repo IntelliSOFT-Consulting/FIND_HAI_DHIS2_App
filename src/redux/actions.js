@@ -25,3 +25,10 @@ export const setOrgUnit = (orgUnit) => (dispatch) => {
     payload: orgUnit,
   });
 };
+
+export const setUser = (user) => (dispatch) => {
+    dispatch({
+        type: "USER",
+        payload: user,
+    });
+};

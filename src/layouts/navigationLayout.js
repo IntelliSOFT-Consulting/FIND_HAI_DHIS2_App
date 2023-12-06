@@ -11,7 +11,8 @@ import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import routes from "../routes";
 import UseGetForms from "../hooks/useGetForms";
 import UseGetOrgUnit from "../hooks/useGetOrgUnit";
-import { useSelector } from "react-redux";
+import { setUser } from "../redux/actions";
+import { useSelector, useDispatch } from "react-redux";
 
 const { Content, Sider } = Layout;
 
@@ -56,16 +57,18 @@ function getItem(label, key, icon, children, type) {
 const items = [
   getItem("Dashboard", "/", <HomeIcon />, null, "item"),
   getItem("Surgeries", "/surgeries", <ChartPieIcon />, null, "item"),
-
   getItem("Reports", "/reports", <ArrowDownRightIcon />, null, "item"),
   getItem("Configurations", "/configurations", <Cog6ToothIcon />, null, "item"),
 ];
 const NavigationLayout = ({ user, program, organisationUnits }) => {
   const classes = styles();
 
+  const dispatch = useDispatch();
+
   const forms = useSelector((state) => state.forms);
 
   const orgUnit = useSelector((state) => state.orgUnit);
+  const currentUser = useSelector((state) => state.user);
 
   const { getForms } = UseGetForms();
 
@@ -87,7 +90,11 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
     if (!orgUnit?.id) {
       getOrgUnit();
     }
-  }, [forms, orgUnit]);
+
+    if (!currentUser?.id) {
+      dispatch(setUser(user));
+    }
+  }, [forms, orgUnit, user]);
 
   useEffect(() => {
     window.scrollTo(0, 0);

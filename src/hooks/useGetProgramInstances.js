@@ -18,7 +18,31 @@ const UseGetProgramInstances = () => {
     }
   };
 
-  return { getProgramValues };
+  const searchPatient = async (programId, key, value) => {
+    try {
+      const { tei } = await engine.query({
+        tei: {
+          resource: `trackedEntityInstances`,
+          params: {
+            fields: ["attributes[*]", "enrollments[*]"],
+            ouMode: "ALL",
+            program: programId,
+            filter: `${key}:eq:${value}`,
+          },
+        },
+      });
+
+      const enrolled = tei?.trackedEntityInstances?.filter((item) => item.enrollments?.length);
+      return enrolled?.map((item) => ({
+        ...item.enrollments[0],
+        attributes: item.attributes,
+      }));
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  return { getProgramValues, searchPatient };
 };
 
 export default UseGetProgramInstances;

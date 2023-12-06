@@ -26,54 +26,39 @@ export default function useViewData() {
         repeatable: true,
       }))
     );
-    console.log("ChildSections: ", childSections);
-    console.log("StageForm Sections: ", stageForm);
-    const flattenedForm = {
-      ...stageForm,
-      sections: [
-        ...stageForm?.sections?.map((item) => ({ ...item, stageId: stageForm.stageId, repeatable: false })),
-        ...childSections,
-      ],
-    };
 
-    const dataView = flattenedForm?.sections?.map((section) => {
-      if (!section.repeatable) {
-        const sectionEvents = stageEvents?.find((event) => event.programStage === section?.stageId);
-        const dataValues = section?.dataElements?.map((element) => {
-          const dataValue = sectionEvents?.dataValues?.find((value) => element?.id === value?.dataElement);
+    const stageFormValues = stageForm?.sections?.flatMap((section) =>{
+      const stageValue = stageEvents?.find((event) => event?.programStage === stageForm?.stageId);
+
+        return section?.dataElements?.map((dataElement) => ({
+            ...dataElement,
+            stageId: stageForm?.stageId,
+            repeatable: false,
+            value: formatValue(stageValue?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value),
+        }));
+  });
+
+    const childSectionValues = stageEvents?.flatMap((event) => {
+      return childSections?.flatMap((section) => {
+        return event?.dataValues?.map((dataValue) => {
+          const dataElement = section?.dataElements?.find(
+            (element) => element?.id === dataValue?.dataElement
+          );
           return {
-            ...element,
-            name: element?.name,
-            value: formatBoolean(formatValue(dataValue?.value)) || "-",
+            ...dataValue,
+            ...dataElement,
+            stageId: section?.stageId,
+            repeatable: true,
           };
         });
-        return {
-          ...section,
-          dataValues,
-        };
-      }
-
-    //   handle repeatable sections
-      const repeatableEvents = stageEvents?.filter((event) => event.programStage === section?.stageId);
-      const dataValues = section?.dataElements?.map((element) => {
-        const dataValue = repeatableEvents?.flatMap((event) => event?.dataValues)?.find(
-          (value) => element?.id === value?.dataElement
-        );
-        return {
-          ...element,
-          name: element?.name,
-          value: formatBoolean(formatValue(dataValue?.value)) || "-",
-        };
       });
-      return {
-        ...section,
-        dataValues,
-      };
     });
 
-    return dataView;
-  };
-
+    return {
+      mainSection: stageFormValues,
+      repeatSections: childSectionValues,
+    }
+}
   const stageForm = findStageForm(stage, stages);
 
   return {

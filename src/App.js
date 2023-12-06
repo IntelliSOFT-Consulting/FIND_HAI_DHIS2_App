@@ -20,6 +20,9 @@ const defaultData = {
 const query = {
   me: {
     resource: "me",
+    params: {
+      fields: "id,displayName,userRoles[id,displayName],organisationUnits[id,displayName],programs[id,displayName]",
+    },
   },
   programs: {
     resource: "programs",

@@ -1,6 +1,7 @@
 import InputItem from "./InputItem";
 import React, { useState, useEffect } from "react";
 import { createUseStyles } from "react-jss";
+import {isValidDate} from "../lib/helpers";
 
 const useStyles = createUseStyles({
   form: {
@@ -53,14 +54,13 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
   const [formValues, setFormValues] = useState({});
   const classes = useStyles();
 
-  const evaluateShowIf = (showIf, formValues) => {
-    const showIfValue = formValues[showIf];
+  const evaluateShowIf = (showIf, formValues, fieldName) => {
+    const showIfValue = formValues[showIf]?.toString()?.toLowerCase();
 
-    if (showIfValue && (showIfValue === true || showIfValue?.toString()?.toLowerCase()?.includes("other"))) {
-      return true;
-    }
-
-    return false;
+    if (showIfValue === "no" || showIfValue === 'false' || showIfValue === 'none given') return false;
+    if (showIfValue === 'true' || showIfValue?.includes("other")) return true;
+    if (showIfValue && showIfValue !== "none given" && fieldName?.toLowerCase()?.includes('reason for')) return true;
+    return showIfValue !== "no" && fieldName?.toLowerCase()?.includes('date');
   };
 
   const setInitialValues = async () => {
@@ -78,7 +78,7 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
   return (
     <div className={`${classes.form} ${form.repeatable ? classes.formList + " " + classes.fullWidth : ""}`}>
       {section.dataElements.map((dataElement, index) => {
-        const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
+        const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues, dataElement.name);
         return shouldShow ? (
           <Form.Item
             key={index}
@@ -97,7 +97,7 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
                 label: option.name,
                 value: option.code,
               }))}
-              defaultValue={dataElement.value}
+              // defaultValue={dataElement.value}
               placeholder={dataElement.name}
               onChange={async (e) => {
                 const value = e?.target ? e.target.value : e;

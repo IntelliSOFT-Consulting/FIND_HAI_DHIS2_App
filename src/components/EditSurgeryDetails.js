@@ -5,6 +5,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 import InputItem from "./InputItem";
 import Section from "./Section";
 import { formatValue } from "../lib/mapValues";
+import dayjs from "dayjs";
 
 const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
   const [loading, setLoading] = useState(false);
@@ -37,6 +38,25 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
       setLoading(false);
       getEnrollment();
       onClose();
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    const dataElements = registration?.sections?.flatMap((section) => {
+      return section?.dataElements?.map((dataElement) => ({
+        id: dataElement.id,
+        name: dataElement.name,
+      }));
+    });
+
+    const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
+    if (name === dateOfBirthField?.id) {
+      const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
+      const age = dayjs().diff(dayjs(value), "year");
+      form.setFieldsValue({
+        [ageField?.id]: age,
+      });
     }
   };
 
@@ -99,7 +119,15 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                     value: option.code,
                   }))}
                   placeholder={dataElement.name}
-                  disabled={dataElement?.disabled}
+                  disabled={
+                      dataElement?.name?.toLowerCase()?.includes("age") ||
+                      dataElement?.name?.toLowerCase()?.includes("secondary id")
+                  }
+                  onChange={(e) => {
+                    const name = e?.target?.name || dataElement.id;
+                    const value = e?.target?.value || e;
+                    handleChange({ target: { name, value } });
+                  }}
                 />
               </Form.Item>
             ))}

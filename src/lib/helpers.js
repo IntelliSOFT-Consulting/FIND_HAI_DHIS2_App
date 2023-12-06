@@ -71,10 +71,13 @@ export function formatRegistration(program) {
 export function formatSurgery(program) {
   const allStages = program?.programStages?.map((stage) => ({ ...stage, ...formatAttributeValues(stage?.attributeValues) }));
   const mainStages = allStages.filter((stage) => !stage?.parentstage);
-  //   combine all stages with their children: children have the parentstage id under the parentstage key
   const stages = mainStages.map((stage) => {
     const children = allStages.filter((child) => child?.parentstage === stage?.id);
-    return { ...stage, children };
+    const repeatable = stage?.repeatable && !stage?.name?.toLowerCase()?.includes("post-operative");
+    const stageWithoutChildren = { ...stage };
+    delete stageWithoutChildren?.children;
+    const stageChildren = repeatable ? [stageWithoutChildren, ...children] : children;
+    return repeatable ? { ...stage, programStageSections: [], children: stageChildren } : { ...stage, children: stageChildren };
   });
 
   const formatStage = (stage) => {
@@ -83,11 +86,11 @@ export function formatSurgery(program) {
       description: stage.description,
       stageId: stage.id,
       repeatable: stage.repeatable,
-      sections: stage.programStageSections.map((section) => {
+      sections: stage.programStageSections?.map((section) => {
         return {
-          name: section.displayName,
-          description: section.description,
+          title: section.displayName,
           sectionId: section.id,
+          stageId: stage.id,
           dataElements: section.dataElements.map((dataElement) => {
             return {
               name: dataElement.displayName,
@@ -156,7 +159,10 @@ export function generateWeeks() {
     endDate.setDate(today.getDate() - 7 * (i - 1));
 
     const weekLabel = `Week ${i}`;
-    weeksArray.push({ label: weekLabel, value: `${format(new Date(startDate), "yyyy-MM-dd")}..${format(new Date(endDate), "yyyy-MM-dd")}` });
+    weeksArray.push({
+      label: weekLabel,
+      value: `${format(new Date(startDate), "yyyy-MM-dd")}..${format(new Date(endDate), "yyyy-MM-dd")}`,
+    });
   }
 
   return weeksArray;

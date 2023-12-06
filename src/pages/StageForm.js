@@ -1,20 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { Breadcrumb, Spin } from "antd";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import { createUseStyles } from "react-jss";
 import CardItem from "../components/CardItem";
-import UseSaveValue from "../hooks/useSaveValue";
-import UseCompleteEvent from "../hooks/useCompleteEvent";
 import { CircularLoader } from "@dhis2/ui";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
 import Stage from "../components/Stage";
 import { DoubleLeftOutlined } from "@ant-design/icons";
-import UseCreateEvent from "../hooks/useCreateEvent";
-import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
 import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
 import { formatForm } from "../lib/formFormatter";
@@ -47,18 +43,13 @@ const useStyles = createUseStyles({
   },
 });
 
-const dateFormat = "YYYY-MM-DD";
-
 export default function StageForm() {
-  const [formValues, setFormValues] = useState(null);
   const [forms, setForms] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [enrollmentData, setEnrollmentData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(null);
+  const [enrollmentData, setEnrollmentData] = useState(null);
 
-  const { stages, program } = useSelector((state) => state.forms);
-  const { id } = useSelector((state) => state.orgUnit);
+  const { stages } = useSelector((state) => state.forms);
 
   const location = useLocation();
 
@@ -78,31 +69,25 @@ export default function StageForm() {
   const queryParams = parseQueryString();
 
   const classes = useStyles();
-  const navigate = useNavigate();
 
-  const { createEvent } = UseCreateEvent();
-  const { updateEnrollment } = UseUpdateEnrollment();
-  const { getData, saveData } = UseDataStore();
+  const { getData } = UseDataStore();
 
   const { stage, enrollment, trackedEntityInstance } = useParams();
 
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
 
-  const { saveValue } = UseSaveValue();
-  const { completeEvent } = UseCompleteEvent();
   const { getEnrollmentData } = UseGetEnrollmentsData();
 
   const stageForm = stages?.find((item) => item.stageId === stage);
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
-    setEnrollmentData(data);
 
     if (data?.status) {
+        setEnrollmentData(data);
       const stageValues = await filterAndSortEvents(data.events);
       if (stageValues?.length > 0 && stageForm) {
-        const dataForm = await formatForm(stageForm, stageValues);
-
+        const dataForm = formatForm(stageForm, stageValues);
         setForms(dataForm);
       }
     }
@@ -154,7 +139,7 @@ export default function StageForm() {
         ) : (
           <Spin spinning={loading}>
             <div className={classes.stage}>
-              <Stage forms={forms} surgeryLink={surgeryLink} setForms={setForms} />
+              <Stage enrollmentData={enrollmentData} forms={forms} surgeryLink={surgeryLink} setForms={setForms} />
             </div>
           </Spin>
         )}
