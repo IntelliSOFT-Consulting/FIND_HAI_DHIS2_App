@@ -5,3 +5,4 @@ src/locales
 build
 .idea
 .DS_Store
+qodana.yaml

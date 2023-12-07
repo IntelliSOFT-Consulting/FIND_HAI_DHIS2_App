@@ -1,10 +1,8 @@
-import React, { useState } from "react";
-import { Button, Tooltip } from "antd";
+import React from "react";
+import { Button } from "antd";
 import InputItem from "./InputItem";
 import { createUseStyles } from "react-jss";
 import { PlusOutlined } from "@ant-design/icons";
-import UseDataStore from "../hooks/useDataStore";
-import UseCreateEvent from "../hooks/useCreateEvent";
 
 const useStyles = createUseStyles({
   fullWidth: {
@@ -22,12 +20,8 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function RepeatForm({ Form, allValues, section, formValues }) {
+export default function RepeatForm({ Form, section, formValues }) {
   const classes = useStyles();
-
-  const { getData, saveData } = UseDataStore();
-  const { createEvent } = UseCreateEvent();
-  console.log("allValues: ", allValues);
 
   return (
     <Form.List name={section?.sectionId}>
@@ -75,12 +69,6 @@ export default function RepeatForm({ Form, allValues, section, formValues }) {
             <Button
               type="dashed"
               onClick={async () => {
-                const mappings = await getData("repeatSections", "postOperative");
-                const event = await createEvent();
-                const payload = {
-                  parentEvent: "",
-                  event: event?.event,
-                };
                 add();
               }}
               block

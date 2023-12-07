@@ -179,7 +179,7 @@ const Forms = ({
                 <Section key={index} title={section.title} />
 
                 <div className={classes.content}>
-                  {section.dataElements.map((dataElement, i) => {
+                  {section.dataElements.map((dataElement) => {
                     return (
                       <Form.Item
                         key={dataElement.id}

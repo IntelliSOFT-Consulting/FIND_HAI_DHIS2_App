@@ -45,8 +45,8 @@ const useStyles = createUseStyles({
 
 export default function StageForm() {
   const [forms, setForms] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(null);
+  const [loading, _setLoading] = useState(false);
+  const [success, _setSuccess] = useState(null);
   const [enrollmentData, setEnrollmentData] = useState(null);
 
   const { stages } = useSelector((state) => state.forms);
@@ -95,20 +95,22 @@ export default function StageForm() {
 
   const filterAndSortEvents = async (events) => {
     const mappings = await getData("repeatSections", "postOperative");
-
     const repeatIds = stageForm?.children?.map((child) => child?.stageId);
-    return events
-      ?.filter((event) => {
-        if (queryParams.event) {
-          const repeatEvents = mappings
-            .filter((mapping) => mapping?.parentEvent === queryParams.event)
-            ?.map((mapping) => mapping?.event);
-          return event.event === queryParams.event || repeatEvents?.includes(event.event);
-        }
-        return event.programStage === stage || repeatIds?.includes(event.programStage);
-      })
-      ?.sort((a, b) => a.created - b.created);
+
+    const filteredEvents = events?.filter((event) => {
+      if (queryParams.event) {
+        const repeatEvents = mappings.filter((mapping) => mapping.parentEvent === queryParams.event).map((mapping) => mapping.event);
+        return event.event === queryParams.event || repeatEvents.includes(event.event);
+      }
+      return event.programStage === stage || repeatIds?.includes(event.programStage);
+    });
+
+    if (filteredEvents) {
+      return filteredEvents.sort((a, b) => a.created - b.created);
+    }
+    return [];
   };
+
 
   useEffect(() => {
     if (stageForm) {
@@ -139,7 +141,7 @@ export default function StageForm() {
         ) : (
           <Spin spinning={loading}>
             <div className={classes.stage}>
-              <Stage enrollmentData={enrollmentData} forms={forms} surgeryLink={surgeryLink} setForms={setForms} />
+              <Stage getEnrollment={getEnrollment} enrollmentData={enrollmentData} forms={forms} surgeryLink={surgeryLink} setForms={setForms} />
             </div>
           </Spin>
         )}

@@ -32,15 +32,11 @@ export function tableDataToObject(tableData) {
 }
 
 const formatAttributeValues = (attributes) => {
-  const attributeValues = attributes.map((attributeValue) => {
-    return {
-      name: attributeValue.attribute.name,
-      value: attributeValue.value,
-    };
-  });
-
-  return attributeValues.reduce((acc, attributeValue) => {
-    acc[attributeValue.name?.toLowerCase()] = attributeValue.value;
+  return attributes.reduce((acc, attributeValue) => {
+    const key = attributeValue?.attribute?.name?.toLowerCase();
+    if (key) {
+      acc[key] = attributeValue.value;
+    }
     return acc;
   }, {});
 };
@@ -70,7 +66,7 @@ export function formatRegistration(program) {
 
 export function formatSurgery(program) {
   const allStages = program?.programStages?.map((stage) => ({ ...stage, ...formatAttributeValues(stage?.attributeValues) }));
-  const mainStages = allStages.filter((stage) => !stage?.parentstage);
+  const mainStages = allStages?.filter((stage) => !stage?.parentstage);
   const stages = mainStages.map((stage) => {
     const children = allStages.filter((child) => child?.parentstage === stage?.id);
     const repeatable = stage?.repeatable && !stage?.name?.toLowerCase()?.includes("post-operative");
@@ -86,6 +82,7 @@ export function formatSurgery(program) {
       description: stage.description,
       stageId: stage.id,
       repeatable: stage.repeatable,
+      showif: stage.showif,
       sections: stage.programStageSections?.map((section) => {
         return {
           title: section.displayName,
@@ -169,33 +166,54 @@ export function generateWeeks() {
 }
 
 export const evaluateShowIf = (str, formValues) => {
-    if (!str) return true;
-    const [fieldId, operator, value] = str.split(":");
-    const fieldValue = formValues[fieldId]?.toString()?.toLowerCase();
-    const valueArray = value?.split(",").map((item) => item?.toLowerCase());
+  if (!str) return true;
+  const [fieldId, operator, value] = str.split(":");
+  const fieldValue = formValues[fieldId]?.toString()?.toLowerCase();
+  const valueArray = value?.split(",").map((item) => item?.toLowerCase());
 
-    switch (operator) {
-      case "eq":
-        return fieldValue === value;
-      case "ne":
-        return fieldValue !== value;
-      case "gt":
-        return fieldValue > value;
-      case "ge":
-        return fieldValue >= value;
-      case "lt":
-        return fieldValue < value;
-      case "le":
-        return fieldValue <= value;
-      case "like":
-        return fieldValue?.includes(value);
-      case "notin":
-        return !valueArray?.includes(fieldValue);
-      case "null":
-        return !fieldValue;
-      case "notnull":
-        return fieldValue;
-      default:
-        return false;
-    }
+  switch (operator) {
+    case "eq":
+      return fieldValue === value;
+    case "ne":
+      return fieldValue !== value;
+    case "gt":
+      return fieldValue > value;
+    case "ge":
+      return fieldValue >= value;
+    case "lt":
+      return fieldValue < value;
+    case "le":
+      return fieldValue <= value;
+    case "like":
+      return fieldValue?.includes(value);
+    case "notin":
+      return !valueArray?.includes(fieldValue);
+    case "null":
+      return !fieldValue;
+    case "notnull":
+      return fieldValue;
+    default:
+      return false;
+  }
+};
+
+export const disableMicrobiology = (form, events) => {
+  const dataElements = form?.sections?.flatMap((section) => {
+    return section?.dataElements?.map((dataElement) => ({
+      id: dataElement.id,
+      name: dataElement.name,
+    }));
+  });
+
+  // find the id for "Samples sent for culture"
+  const samplesSentForCultureId = dataElements?.find((dataElement) => dataElement.name.includes("Samples sent for culture"))?.id;
+
+  const samplesSentForCultureValues = events
+    ?.flatMap((event) => {
+      const value = event?.dataValues?.find((dataValue) => dataValue?.dataElement === samplesSentForCultureId)?.value;
+      return value ? JSON.parse(value) : null;
+    })
+    ?.filter((value) => value);
+
+  return samplesSentForCultureValues?.length;
 };

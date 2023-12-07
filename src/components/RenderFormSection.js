@@ -70,6 +70,9 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
     <div className={`${classes.form} ${form.repeatable ? classes.formList + " " + classes.fullWidth : ""}`}>
       {section.dataElements.map((dataElement, index) => {
         const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
+        if (!shouldShow) {
+          form.setFieldValue(dataElement.id, null);
+        }
         return shouldShow ? (
           <Form.Item
             key={index}

@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { createUseStyles } from "react-jss";
 import { Button } from "antd";
 

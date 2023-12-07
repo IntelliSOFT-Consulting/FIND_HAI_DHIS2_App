@@ -1,40 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Table, Breadcrumb } from "antd";
-import { Link, useParams, useLocation } from "react-router-dom";
+import { Breadcrumb, Table } from "antd";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { DoubleLeftOutlined } from "@ant-design/icons";
-import { createUseStyles } from "react-jss";
 import { CircularLoader } from "@dhis2/ui";
 import Section from "../components/Section";
 import CardItem from "../components/CardItem";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
-import UseViewData from "../hooks/UseViewData";
 import UseDataStore from "../hooks/useDataStore";
 import { formatDisplayValue } from "../lib/mapValues";
-
-const useStyles = createUseStyles({
-  "@global": {
-    ".ant-table": {
-      borderRadius: "0px !important",
-      "& *": {
-        borderRadius: "0px !important",
-      },
-    },
-  },
-  backButton: {
-    marginBottom: "1rem",
-  },
-});
 
 const ViewStage = () => {
   const [columns, setColumns] = useState(null);
   const { stages } = useSelector((state) => state.forms);
   const { getEnrollmentData } = UseGetEnrollmentsData();
-  const { dataViewModel, setEnrollment, setEvents, events } = UseViewData();
   const { getData } = UseDataStore();
   const { stage, enrollment, trackedEntityInstance } = useParams();
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
-  const classes = useStyles();
   const location = useLocation();
 
   const parseQueryString = () => {

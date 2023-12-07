@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
-import { Form, Button, Table } from "antd";
+import React from "react";
+import { Table } from "antd";
 import Accordion from "./Accordion";
-import InputItem from "./InputItem";
 import Section from "./Section";
 import { createUseStyles } from "react-jss";
 

@@ -1,10 +1,9 @@
-import React from "react";
 import { useDataEngine } from "@dhis2/app-runtime";
 
 const UseGetProgramInstances = () => {
   const engine = useDataEngine();
 
-  const getProgramValues = async (programId, programStage, orgUnit, filter) => {
+  const getProgramValues = async (programId, programStage, orgUnit) => {
     try {
       const { events } = await engine.query({
         events: {

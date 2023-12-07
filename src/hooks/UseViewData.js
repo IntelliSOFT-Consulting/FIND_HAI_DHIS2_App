@@ -11,12 +11,6 @@ export default function useViewData() {
 
   const findStageForm = (stageId, stages) => stages?.find((item) => item.stageId === stageId);
 
-  const formatBoolean = (value) => {
-    if (value === "true") return "Yes";
-    if (value === "false") return "No";
-    return value;
-  };
-
   const findDataViewModel = (stageForm, stageEvents) => {
     if (!stageForm || !stageEvents) return;
     const childSections = stageForm?.children?.flatMap((child) =>
@@ -27,23 +21,21 @@ export default function useViewData() {
       }))
     );
 
-    const stageFormValues = stageForm?.sections?.flatMap((section) =>{
+    const stageFormValues = stageForm?.sections?.flatMap((section) => {
       const stageValue = stageEvents?.find((event) => event?.programStage === stageForm?.stageId);
 
-        return section?.dataElements?.map((dataElement) => ({
-            ...dataElement,
-            stageId: stageForm?.stageId,
-            repeatable: false,
-            value: formatValue(stageValue?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value),
-        }));
-  });
+      return section?.dataElements?.map((dataElement) => ({
+        ...dataElement,
+        stageId: stageForm?.stageId,
+        repeatable: false,
+        value: formatValue(stageValue?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value),
+      }));
+    });
 
     const childSectionValues = stageEvents?.flatMap((event) => {
       return childSections?.flatMap((section) => {
         return event?.dataValues?.map((dataValue) => {
-          const dataElement = section?.dataElements?.find(
-            (element) => element?.id === dataValue?.dataElement
-          );
+          const dataElement = section?.dataElements?.find((element) => element?.id === dataValue?.dataElement);
           return {
             ...dataValue,
             ...dataElement,
@@ -57,8 +49,8 @@ export default function useViewData() {
     return {
       mainSection: stageFormValues,
       repeatSections: childSectionValues,
-    }
-}
+    };
+  };
   const stageForm = findStageForm(stage, stages);
 
   return {

@@ -1,4 +1,3 @@
-import React from "react";
 import { useDataEngine } from "@dhis2/app-runtime";
 
 export default function UseSaveValue() {

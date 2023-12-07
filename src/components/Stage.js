@@ -14,7 +14,7 @@ import { debounce } from "lodash";
 import SectionForm from "./SectionForm";
 import Alert from "./Alert";
 import { useSelector } from "react-redux";
-import {evaluateShowIf} from "../lib/helpers";
+import { evaluateShowIf } from "../lib/helpers";
 
 const useStyles = createUseStyles({
   form: {
@@ -63,13 +63,13 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) {
+export default function Stage({ forms, setForms, surgeryLink, enrollmentData, getEnrollment }) {
   const [loading, setLoading] = useState(false);
   const [validate, setValidate] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
   const [alert, setAlert] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
-  const [checked, setChecked] = useState(false);
+  const [_checked, setChecked] = useState(false);
 
   const { stages } = useSelector((state) => state.forms);
 
@@ -80,7 +80,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) 
   const { createEvent } = UseCreateEvent();
   const { getEvent } = UseGetEvent();
   const { saveValue } = UseSaveValue();
-  const { getData, saveData } = UseDataStore();
+  const { saveData } = UseDataStore();
   const { updateEnrollment } = UseUpdateEnrollment();
 
   const stageForm = stages?.find((form) => form.stageId === stageId);
@@ -101,14 +101,13 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) 
       return key?.includes(valueKey);
     });
 
-    console.log(showif)
-    console.log('Evaluation: ', evaluateShowIf(showif?.showif, { [valueKey]: value }))
-
-    if (showif && !evaluateShowIf(showif?.showif, { [valueKey]: value }) ) {
+    if (showif && !evaluateShowIf(showif?.showif, { [valueKey]: value })) {
       await saveValue(section.event, null, showif?.id, section.orgUnit, section.program, section.programStage);
     }
 
     await saveValue(section.event, value, valueKey, section.orgUnit, section.program, section.programStage);
+
+    await getEnrollment();
   }, 500);
 
   const completeEnrollment = async () => {
@@ -147,6 +146,33 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) 
     return () => clearTimeout(timer);
   }, [validationErrors, isValidating]);
 
+  const stageElements = stages
+    ?.find((stageForm) => stageForm?.stageId === stageId)
+    ?.children.flatMap((child) => {
+      return child?.sections?.flatMap((section) => {
+        return section?.dataElements?.map((dataElement) => {
+          return {
+            name: dataElement.name,
+            id: dataElement.id,
+          };
+        });
+      });
+    });
+
+  const organismIsolatedId = stageElements?.find((dataElement) => dataElement.name.includes("Culture findings"))?.id;
+
+  const formatEvents = enrollmentData?.events?.flatMap((item) => {
+    const arr = [];
+    item.dataValues?.reduce((acc, curr) => {
+      if (curr.dataElement === organismIsolatedId && curr.value === "No growth") {
+        acc[curr.dataElement] = curr.value;
+        arr.push(acc.value);
+      }
+      return acc;
+    }, {});
+    return arr;
+  });
+
   return (
     <div>
       <div>
@@ -156,7 +182,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) 
               ? form.sections?.map((section, sectionIndex) => {
                   return (
                     <SectionForm
-                      key={sectionIndex}
+                      key={formIndex}
                       section={section}
                       saveValue={debouncedSaveValue}
                       validate={validate}
@@ -167,94 +193,92 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData }) 
                     />
                   );
                 })
-              : Object.entries(form).map(([sectionName, formItems], sectionIndex) => (
-                  <React.Fragment key={sectionIndex}>
-                    <Section title={sectionName} />
-                    {formItems.map((formItem, formItemIndex) => (
-                      <>
-                        {formItem.sections?.map((section, index) => (
-                          <SectionForm
-                            key={index}
-                            saveValue={debouncedSaveValue}
-                            section={section}
-                            className={classes.formList}
-                            validate={validate}
-                            validationErrors={validationErrors}
-                            setValidationErrors={setValidationErrors}
-                            setIsValidating={setIsValidating}
-                            isLastSection={index === formItem.sections?.length - 1}
-                          />
-                        ))}
-                      </>
-                    ))}
-                    <div className={classes.add}>
-                      <Button
-                        type="dashed"
-                        onClick={async () => {
-                          setLoading(true);
-                          const mappings = await getData("repeatSections", "postOperative");
-                          const event = await createEvent(formItems[0]?.stageId, []);
-                          // parent stage is the first stage in the form
-                          const parentStage = forms[0]?.sections[0]?.programStage;
-                          const parentName = forms[0]?.title;
+              : Object.entries(form).map(([sectionName, formItems], sectionIndex) =>
+                  formatEvents?.length > 0 &&
+                  sectionName?.toLowerCase()?.includes("antimicrobial susceptibility testing") ? null : (
+                    <React.Fragment key={sectionIndex}>
+                      <Section title={sectionName} />
+                      {formItems.map((formItem, idx) => (
+                        <>
+                          {formItem.sections?.map((section, index) => (
+                            <SectionForm
+                              key={index}
+                              index={idx}
+                              saveValue={debouncedSaveValue}
+                              section={section}
+                              className={classes.formList}
+                              validate={validate}
+                              validationErrors={validationErrors}
+                              setValidationErrors={setValidationErrors}
+                              setIsValidating={setIsValidating}
+                              isLastSection={index === formItem.sections?.length - 1}
+                              getEnrollment={getEnrollment}
+                            />
+                          ))}
+                        </>
+                      ))}
+                      <div className={classes.add}>
+                        <Button
+                            type="dashed"
+                            onClick={async () => {
+                              setLoading(true);
 
-                          if (parentName?.toLowerCase()?.includes("post-operative")) {
-                            const payload = {
-                              parentEvent: "",
-                              event: event,
-                            };
+                              const event = await createEvent(formItems[0]?.stageId, []);
+                              const parentName = forms[0]?.title;
 
-                            await saveData("repeatSections", "postOperative", payload);
-                          }
+                              if (parentName?.toLowerCase()?.includes("post-operative")) {
+                                const payload = { parentEvent: "", event };
+                                await saveData("repeatSections", "postOperative", payload);
+                              }
 
-                          if (event) {
-                            const eventData = await getEvent(event);
-                            if (eventData) {
-                              const newForm = { ...form };
-                              newForm[sectionName] = [
-                                ...(newForm[sectionName] || []),
-                                {
-                                  ...formItems[0],
-                                  event: eventData.event,
-                                  sections: formItems[0]?.sections?.map((section) => ({
-                                    ...section,
+                              if (event) {
+                                const eventData = await getEvent(event);
+
+                                if (eventData) {
+                                  const newForm = { ...form };
+                                  const updatedSection = {
+                                    ...formItems[0],
                                     event: eventData.event,
-                                    status: eventData.status,
-                                    trackedEntityInstance: eventData.trackedEntityInstance,
-                                    enrollment: eventData.enrollment,
-                                    enrollmentStatus: eventData.enrollmentStatus,
-                                    orgUnit: eventData.orgUnit,
-                                    program: eventData.program,
-                                    programStage: eventData.programStage,
-                                    dataElements: section.dataElements?.map((dataElement) => {
-                                      const dataElementValue = eventData?.dataValues?.find(
-                                        (dataValue) => dataValue.dataElement === dataElement.id
-                                      );
-                                      return {
-                                        ...dataElement,
-                                        value: formatValue(dataElementValue?.value),
-                                      };
-                                    }),
-                                  })),
-                                },
-                              ];
-                              const newForms = [...forms];
-                              newForms[formIndex] = newForm;
-                              setForms(newForms);
-                              setLoading(false);
-                            }
-                          }
-                        }}
-                        block
-                        icon={<PlusCircleOutlined />}
-                        loading={loading}
-                        disabled={loading}
-                      >
-                        Add {sectionName?.toLowerCase()}
-                      </Button>
-                    </div>
-                  </React.Fragment>
-                ))}
+                                    sections: formItems[0]?.sections?.map((section) => ({
+                                      ...section,
+                                      event: eventData.event,
+                                      status: eventData.status,
+                                      trackedEntityInstance: eventData.trackedEntityInstance,
+                                      enrollment: eventData.enrollment,
+                                      enrollmentStatus: eventData.enrollmentStatus,
+                                      orgUnit: eventData.orgUnit,
+                                      program: eventData.program,
+                                      programStage: eventData.programStage,
+                                      dataElements: section.dataElements?.map((dataElement) => {
+                                        const dataElementValue = eventData?.dataValues?.find(
+                                            (dataValue) => dataValue.dataElement === dataElement.id
+                                        );
+                                        return { ...dataElement, value: formatValue(dataElementValue?.value) };
+                                      }),
+                                    })),
+                                  };
+
+                                  newForm[sectionName] = [...(newForm[sectionName] || []), updatedSection];
+
+                                  const newForms = [...forms];
+                                  newForms[formIndex] = newForm;
+
+                                  setForms(newForms);
+                                  setLoading(false);
+                                }
+                              }
+                            }}
+                            block
+                            icon={<PlusCircleOutlined />}
+                            loading={loading}
+                            disabled={loading}
+                        >
+                          Add {sectionName?.toLowerCase()}
+                        </Button>
+                      </div>
+                    </React.Fragment>
+                  )
+                )}
           </React.Fragment>
         ))}
       </div>

@@ -43,7 +43,7 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Surgeries({ program, user, organisationUnits }) {
+export default function Surgeries({ program }) {
   const [instances, setInstances] = useState(null);
   const [weeks, _] = useState(generateWeeks());
   const styles = useStyles();

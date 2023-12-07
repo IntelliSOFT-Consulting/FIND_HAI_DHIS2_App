@@ -1,7 +1,6 @@
-import React from "react";
 import { useDataEngine } from "@dhis2/app-runtime";
 
-const UseSaveEvent = ({ programId, programStage, orgUnit }) => {
+const UseSaveEvent = ({ _programId, _programStage, _orgUnit }) => {
   const engine = useDataEngine();
 
   const saveEvent = async (event, enrollment = false) => {

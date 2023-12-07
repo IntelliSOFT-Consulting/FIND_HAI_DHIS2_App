@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Form, Button } from "antd";
+import { Button, Form } from "antd";
 import CardItem from "../components/CardItem";
 import Section from "../components/Section";
 import InputItem from "../components/InputItem";
@@ -8,9 +8,8 @@ import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
 import ErrorModal from "../components/ErrorModal";
 import { useNavigate } from "react-router-dom";
-import UseFindPatientInstance from "../hooks/useFindPatientInstance";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
-import {evaluateShowIf, generateId} from "../lib/helpers";
+import { evaluateShowIf, generateId } from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
@@ -18,8 +17,6 @@ import useGetProgramInstances from "../hooks/useGetProgramInstances";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
-
-const dateFormat = "YYYY-MM-DD";
 
 const useStyles = createUseStyles({
   form: {
@@ -33,7 +30,7 @@ const useStyles = createUseStyles({
 });
 
 export default function Register() {
-  const [error, setError] = useState(null);
+  const [_error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formValues, setFormValues] = useState({});
   const [enrollments, setEnrollments] = useState(null);
@@ -47,7 +44,6 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  const { findPatientInstance } = UseFindPatientInstance();
   const { getEnrollmentData } = UseGetEnrollmentsData();
   const { searchPatient } = useGetProgramInstances();
 

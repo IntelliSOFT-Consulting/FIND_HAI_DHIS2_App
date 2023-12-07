@@ -38,7 +38,7 @@ export default function UseGetForms() {
           stages: surgeries,
           trackedEntityType: program?.trackedEntityType,
           program: program?.id,
-        }),
+        })
       );
     } catch (error) {
       notification.error({

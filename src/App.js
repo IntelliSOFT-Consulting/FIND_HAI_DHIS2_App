@@ -7,6 +7,7 @@ import { Routes, Route, HashRouter } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import { Provider } from "react-redux";
 import store from "./redux/store";
+import './style.css';
 
 const defaultData = {
   borderRadius: 6,
