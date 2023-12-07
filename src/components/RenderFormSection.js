@@ -1,5 +1,5 @@
 import InputItem from "./InputItem";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
 import { evaluateShowIf } from "../lib/helpers";
 
@@ -50,8 +50,9 @@ const useStyles = createUseStyles({
   },
 });
 
-const RenderFormSection = ({ section, Form, form, saveValue }) => {
+const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
   const [formValues, setFormValues] = useState({});
+  const [warnings, setWarnings] = useState(null);
   const classes = useStyles();
 
   const setInitialValues = async () => {
@@ -65,6 +66,14 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
   useEffect(() => {
     setInitialValues();
   }, []);
+
+  const eventsValues = events?.flatMap((event) => {
+    const values = {};
+    for (const dataValue of event?.dataValues) {
+      values[dataValue.dataElement] = dataValue.value;
+    }
+    return values;
+  });
 
   return (
     <div className={`${classes.form} ${form.repeatable ? classes.formList + " " + classes.fullWidth : ""}`}>
@@ -91,14 +100,36 @@ const RenderFormSection = ({ section, Form, form, saveValue }) => {
                 label: option.name,
                 value: option.code,
               }))}
-              // defaultValue={dataElement.value}
               placeholder={dataElement.name}
+              status={warnings?.id === dataElement.id ? "error" : null}
               onChange={async (e) => {
                 const value = e?.target ? e.target.value : e;
-                await saveValue(value, dataElement, section);
+                if (
+                  dataElement.name === "Preoperative Antibiotic Prophylaxis" ||
+                  dataElement.name === "Postoperative Antibiotic Prophylaxis"
+                ) {
+                  const existingValue = eventsValues?.find((eventValue) => eventValue[dataElement.id] === value);
+                  if (existingValue) {
+                    setWarnings({
+                      id: dataElement.id,
+                      message: `${value} already exists in another section. Please check your data.`,
+                    });
+                    form.setFieldValue(dataElement.id, null);
+                  } else {
+                    setWarnings(null);
+                    await saveValue(value, dataElement, section);
+                    form.setFieldValue(dataElement.id, value);
+                  }
+                } else {
+                  await saveValue(value, dataElement, section);
+                }
+
                 setFormValues(form.getFieldsValue());
               }}
             />
+            {warnings?.id === dataElement.id && (
+              <div style={{ color: "red", fontSize: "0.8rem", marginTop: "0.5rem" }}>{warnings?.message}</div>
+            )}
           </Form.Item>
         ) : null;
       })}

@@ -213,6 +213,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
                               setIsValidating={setIsValidating}
                               isLastSection={index === formItem.sections?.length - 1}
                               getEnrollment={getEnrollment}
+                              events={enrollmentData?.events}
                             />
                           ))}
                         </>

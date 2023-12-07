@@ -21,7 +21,7 @@ const useStyles = createUseStyles({
   },
 });
 
-const SectionForm = ({ section, className, saveValue, validate, setValidationErrors, setIsValidating, index, getEnrollment }) => {
+const SectionForm = ({ section, className, saveValue, validate, setValidationErrors, setIsValidating, index, getEnrollment, events }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
@@ -73,7 +73,7 @@ const SectionForm = ({ section, className, saveValue, validate, setValidationErr
       <Spin spinning={loading} tip="Deleting section...">
         <Form initialValues={initialValues(section)} layout="vertical" className={className} name={section?.event} form={form}>
           <Section title={section?.title} />
-          <RenderFormSection section={section} Form={Form} form={form} saveValue={saveValue} />
+          <RenderFormSection section={section} Form={Form} form={form} saveValue={saveValue} events={events} />
         </Form>
       </Spin>
     </div>
