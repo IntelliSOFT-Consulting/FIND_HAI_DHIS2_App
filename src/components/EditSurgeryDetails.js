@@ -5,10 +5,12 @@ import { useDataEngine } from "@dhis2/app-runtime";
 import InputItem from "./InputItem";
 import Section from "./Section";
 import { formatValue } from "../lib/mapValues";
+import { evaluateShowIf } from "../lib/helpers";
 import dayjs from "dayjs";
 
 const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
   const [loading, setLoading] = useState(false);
+  const [formValues, setFormValues] = useState({});
 
   const [form] = Form.useForm();
 
@@ -99,38 +101,47 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
         {registration?.sections?.map((section) => (
           <>
             <Section key={section?.id} title={section?.title} />
-            {section?.dataElements?.map((dataElement) => (
-              <Form.Item
-                key={dataElement?.id}
-                label={dataElement?.name}
-                name={dataElement?.id}
-                rules={[
-                  {
-                    required: dataElement?.required,
-                    message: `Please input ${dataElement?.name}!`,
-                  },
-                ]}
-                disabled={dataElement?.disabled}
-              >
-                <InputItem
-                  type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
-                  options={dataElement.optionSet?.options?.map((option) => ({
-                    label: option.name,
-                    value: option.code,
-                  }))}
-                  placeholder={dataElement.name}
-                  disabled={
+            {section?.dataElements?.map((dataElement) => {
+              const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
+              if (!shouldShow) {
+                form.setFieldValue(dataElement.id, null);
+              }
+
+              return (
+                <Form.Item
+                  key={dataElement?.id}
+                  label={dataElement?.name}
+                  name={dataElement?.id}
+                  rules={[
+                    {
+                      required: dataElement?.required,
+                      message: `Please input ${dataElement?.name}!`,
+                    },
+                  ]}
+                  disabled={dataElement?.disabled}
+                  hidden={!shouldShow}
+                >
+                  <InputItem
+                    type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
+                    options={dataElement.optionSet?.options?.map((option) => ({
+                      label: option.name,
+                      value: option.code,
+                    }))}
+                    placeholder={dataElement.name}
+                    disabled={
                       dataElement?.name?.toLowerCase()?.includes("age") ||
                       dataElement?.name?.toLowerCase()?.includes("secondary id")
-                  }
-                  onChange={(e) => {
-                    const name = e?.target?.name || dataElement.id;
-                    const value = e?.target?.value || e;
-                    handleChange({ target: { name, value } });
-                  }}
-                />
-              </Form.Item>
-            ))}
+                    }
+                    onChange={(e) => {
+                      const name = e?.target?.name || dataElement.id;
+                      const value = e?.target?.value || e;
+                      handleChange({ target: { name, value } });
+                      setFormValues(form.getFieldsValue());
+                    }}
+                  />
+                </Form.Item>
+              );
+            })}
           </>
         ))}
       </Form>
