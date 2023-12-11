@@ -32,3 +32,10 @@ export const setUser = (user) => (dispatch) => {
         payload: user,
     });
 };
+
+export const setAttributes = (attributes) => (dispatch) => {
+  dispatch({
+    type: "ATTRIBUTES",
+    payload: attributes,
+  });
+}

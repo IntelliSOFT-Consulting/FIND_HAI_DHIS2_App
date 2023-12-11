@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
 import useGetProgramInstances from "../hooks/useGetProgramInstances";
+import { evaluateValidations } from "../lib/helpers";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -103,7 +104,6 @@ export default function Register() {
     }
   }, [dataElements]);
 
-
   const register = async (values) => {
     const payload = {
       trackedEntityType: trackedEntityType?.id,
@@ -184,8 +184,8 @@ export default function Register() {
                     required: dataElement.required,
                     message: `Please input ${dataElement.displayName}!`,
                   },
-                  dataElement?.validator ? { validator: eval(dataElement.validator) } : null,
-                ].filter((rule) => rule !== null);
+                  ...evaluateValidations(dataElement.validator, dataElement.valueType, formValues, section?.dataElements),
+                ];
                 const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
                 return shouldShow ? (
                   <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
@@ -220,7 +220,13 @@ export default function Register() {
         </Button>
       </Form>
       {enrollments && (
-        <ErrorModal setLoading={setLoading} enrollments={enrollments} setEnrollments={setEnrollments} enroll={register} values={formValues} />
+        <ErrorModal
+          setLoading={setLoading}
+          enrollments={enrollments}
+          setEnrollments={setEnrollments}
+          enroll={register}
+          values={formValues}
+        />
       )}
     </CardItem>
   );

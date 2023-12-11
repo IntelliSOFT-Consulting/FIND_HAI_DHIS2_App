@@ -50,3 +50,13 @@ export const userReducer = (state = {}, action) => {
       return state;
   }
 };
+
+export const attributesReducer = (state = [], action) => {
+  switch (action.type) {
+    case "ATTRIBUTES":
+      return action.payload;
+
+    default:
+      return state;
+  }
+};

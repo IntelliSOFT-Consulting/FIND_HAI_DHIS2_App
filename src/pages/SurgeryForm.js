@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Table, Button, Badge, Breadcrumb, Tooltip } from "antd";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { setAttributes } from "../redux/actions";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import UseCreateEvent from "../hooks/useCreateEvent";
 import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
@@ -67,6 +68,8 @@ export default function SurgeryForm() {
 
   const classes = useStyles();
 
+    const dispatch = useDispatch();
+
   const { trackedEntityInstance, enrollment } = useParams();
   const navigate = useNavigate();
 
@@ -80,6 +83,15 @@ export default function SurgeryForm() {
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
     setEnrollmentData(data);
+
+    const attributes = data?.attributes?.map((attribute) => ({
+      id: attribute.attribute,
+      name: attribute?.displayName,
+      valueType: attribute?.valueType,
+      value: attribute?.value,
+    }));
+
+    dispatch(setAttributes(attributes));
 
     const enrollmentValues = formatValues(registration, data);
 

@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+
 export function tableDataToObject(tableData) {
   const headers = tableData.headers.map((header) => ({
     name: header.name,
@@ -216,4 +217,54 @@ export const disableMicrobiology = (form, events) => {
     ?.filter((value) => value);
 
   return samplesSentForCultureValues?.length;
+};
+
+export const evaluateValidations = (validations, fieldType, formValues, dataElements) => {
+  if (!validations) return [];
+
+  const createPromise = (bool, message) => new Promise((resolve, reject) => (bool ? resolve() : reject(message)));
+
+  return (validations.replace(/\s/g, "").split(",") || []).map((validation) => {
+    const [operator, fieldId] = validation.split(":");
+    let fieldValue = formValues[fieldId]?.toString()?.toLowerCase() || "";
+
+    const field = dataElements.find((dataElement) => dataElement?.id === fieldId) || {};
+
+    if (fieldType === "DATE") {
+      if (fieldId === "today") {
+        field.name = fieldId;
+        fieldValue = ["lt", "le", "eq", "gt"].includes(operator)
+          ? new Date(new Date().setHours(23, 59, 59, 999))
+          : new Date(new Date().setHours(0, 0, 0, 0));
+      } else {
+        fieldValue = formValues[fieldId] ? new Date(format(new Date(formValues[fieldId]), "yyyy-MM-dd")) : new Date();
+      }
+    }
+
+    const formatDateValue = (value) => {
+      if (operator === "eq" && fieldType === "DATE") {
+        return value ? format(new Date(value), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
+      }
+      return value;
+    };
+
+    const operators = {
+      eq: (value) =>
+        createPromise(formatDateValue(fieldValue) === formatDateValue(value), `Value should be equal to ${field?.name}`),
+      ne: (value) => createPromise(fieldValue !== value, `Value should not be equal to ${field?.name}`),
+      gt: (value) => createPromise(value > fieldValue, `Value should be greater than ${field?.name}`),
+      ge: (value) => createPromise(value >= fieldValue, `Value should be greater than or equal to ${field?.name}`),
+      lt: (value) => createPromise(value < fieldValue, `Value should be less than ${field?.name}`),
+      le: (value) => createPromise(value <= fieldValue, `Value should be less than or equal to ${field?.name}`),
+      like: (value) => createPromise(fieldValue?.includes(value), `Value should contain ${fieldValue}`),
+      notin: (value) => createPromise(!fieldValue?.includes(value), `Value should not be in ${fieldValue}`),
+      null: (value) => createPromise(!value, `${field?.name} should be null`),
+      notnull: (value) => createPromise(value, `${field?.name} should not be null`),
+      default: () => createPromise(false, "Invalid operator"),
+    };
+
+    return {
+      validator: (rule, value) => operators[operator]?.(value) || operators.default(),
+    };
+  });
 };

@@ -21,7 +21,17 @@ const useStyles = createUseStyles({
   },
 });
 
-const SectionForm = ({ section, className, saveValue, validate, setValidationErrors, setIsValidating, index, getEnrollment, events }) => {
+const SectionForm = ({
+  section,
+  className,
+  saveValue,
+  validate,
+  setValidationErrors,
+  setIsValidating,
+  index,
+  getEnrollment,
+  events,
+}) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
@@ -55,9 +65,11 @@ const SectionForm = ({ section, className, saveValue, validate, setValidationErr
 
   const deletable = className && index > 0;
 
+  const isDisabled = events?.some((event) => event?.status === "COMPLETED");
+
   return (
     <div className={classes.container}>
-      {deletable && (
+      {deletable && !isDisabled && (
         <Popconfirm
           title={"Are you sure you want to delete this section?"}
           onConfirm={async () => {
@@ -71,7 +83,15 @@ const SectionForm = ({ section, className, saveValue, validate, setValidationErr
         </Popconfirm>
       )}
       <Spin spinning={loading} tip="Deleting section...">
-        <Form initialValues={initialValues(section)} layout="vertical" className={className} name={section?.event} form={form}>
+        <Form
+          initialValues={initialValues(section)}
+          layout="vertical"
+          className={className}
+          name={section?.event}
+          form={form}
+          autoComplete={"off"}
+          disabled={isDisabled}
+        >
           <Section title={section?.title} />
           <RenderFormSection section={section} Form={Form} form={form} saveValue={saveValue} events={events} />
         </Form>

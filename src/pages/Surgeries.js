@@ -279,7 +279,7 @@ export default function Surgeries({ program }) {
               status: instance?.status,
             };
           })}
-          pagination={instances?.length > 10 ? { pageSize: 10 } : false}
+          pagination={instances?.length > 10 ? { pageSize: 10, showSizeChanger: false } : false}
           rowKey={(record) => record?.trackedEntityInstance}
           bordered
           size="small"

@@ -9,6 +9,7 @@ import UseGetEvent from "../hooks/useGetEvent";
 import UseSaveValue from "../hooks/useSaveValue";
 import UseDataStore from "../hooks/useDataStore";
 import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
+import useCompleteEvent from "../hooks/useCompleteEvent";
 import { formatValue } from "../lib/mapValues";
 import { debounce } from "lodash";
 import SectionForm from "./SectionForm";
@@ -82,6 +83,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
   const { saveValue } = UseSaveValue();
   const { saveData } = UseDataStore();
   const { updateEnrollment } = UseUpdateEnrollment();
+  const { completeAllEvents, activateAllEvents } = useCompleteEvent();
 
   const stageForm = stages?.find((form) => form.stageId === stageId);
 
@@ -93,10 +95,22 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
     }));
   });
 
+  const childrenDataElements = stageForm?.children?.flatMap((child) => {
+    return child?.sections?.flatMap((section) => {
+      return section?.dataElements?.map((dataElement) => ({
+        id: dataElement.id,
+        name: dataElement.name,
+        showif: dataElement.showif,
+      }));
+    });
+  });
+
+  const dataElements = [...formDataElements, ...childrenDataElements];
+
   const debouncedSaveValue = debounce(async (value, dataElement, section) => {
     const valueKey = dataElement.id;
 
-    const showif = formDataElements?.find((element) => {
+    const showif = dataElements?.find((element) => {
       const key = element.showif ? element.showif?.split(":")[0] : null;
       return key?.includes(valueKey);
     });
@@ -112,6 +126,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
 
   const completeEnrollment = async () => {
     try {
+      const stageEvents = enrollmentData?.events?.filter((event) => event.programStage === stageId);
       const formName = stages?.find((form) => form.stageId === stageId)?.title;
       if (formName?.toLowerCase()?.includes("outcome")) {
         const payload = {
@@ -119,9 +134,12 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
           status: "COMPLETED",
           completedDate: new Date().toISOString(),
         };
+
+        await completeAllEvents(stageEvents);
         await updateEnrollment(enrollment, payload);
         navigate(surgeryLink);
       } else {
+        await completeAllEvents(stageEvents);
         navigate(surgeryLink);
       }
     } catch (error) {
@@ -190,6 +208,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
                       setValidationErrors={setValidationErrors}
                       setIsValidating={setIsValidating}
                       isLastSection={sectionIndex === form.sections?.length - 1 && Array.isArray(forms[forms?.length - 1])}
+                      events={enrollmentData?.events}
                     />
                   );
                 })
@@ -220,59 +239,59 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
                       ))}
                       <div className={classes.add}>
                         <Button
-                            type="dashed"
-                            onClick={async () => {
-                              setLoading(true);
+                          type="dashed"
+                          onClick={async () => {
+                            setLoading(true);
 
-                              const event = await createEvent(formItems[0]?.stageId, []);
-                              const parentName = forms[0]?.title;
+                            const event = await createEvent(formItems[0]?.stageId, []);
+                            const parentName = forms[0]?.title;
 
-                              if (parentName?.toLowerCase()?.includes("post-operative")) {
-                                const payload = { parentEvent: "", event };
-                                await saveData("repeatSections", "postOperative", payload);
-                              }
+                            if (parentName?.toLowerCase()?.includes("post-operative")) {
+                              const payload = { parentEvent: "", event };
+                              await saveData("repeatSections", "postOperative", payload);
+                            }
 
-                              if (event) {
-                                const eventData = await getEvent(event);
+                            if (event) {
+                              const eventData = await getEvent(event);
 
-                                if (eventData) {
-                                  const newForm = { ...form };
-                                  const updatedSection = {
-                                    ...formItems[0],
+                              if (eventData) {
+                                const newForm = { ...form };
+                                const updatedSection = {
+                                  ...formItems[0],
+                                  event: eventData.event,
+                                  sections: formItems[0]?.sections?.map((section) => ({
+                                    ...section,
                                     event: eventData.event,
-                                    sections: formItems[0]?.sections?.map((section) => ({
-                                      ...section,
-                                      event: eventData.event,
-                                      status: eventData.status,
-                                      trackedEntityInstance: eventData.trackedEntityInstance,
-                                      enrollment: eventData.enrollment,
-                                      enrollmentStatus: eventData.enrollmentStatus,
-                                      orgUnit: eventData.orgUnit,
-                                      program: eventData.program,
-                                      programStage: eventData.programStage,
-                                      dataElements: section.dataElements?.map((dataElement) => {
-                                        const dataElementValue = eventData?.dataValues?.find(
-                                            (dataValue) => dataValue.dataElement === dataElement.id
-                                        );
-                                        return { ...dataElement, value: formatValue(dataElementValue?.value) };
-                                      }),
-                                    })),
-                                  };
+                                    status: eventData.status,
+                                    trackedEntityInstance: eventData.trackedEntityInstance,
+                                    enrollment: eventData.enrollment,
+                                    enrollmentStatus: eventData.enrollmentStatus,
+                                    orgUnit: eventData.orgUnit,
+                                    program: eventData.program,
+                                    programStage: eventData.programStage,
+                                    dataElements: section.dataElements?.map((dataElement) => {
+                                      const dataElementValue = eventData?.dataValues?.find(
+                                        (dataValue) => dataValue.dataElement === dataElement.id
+                                      );
+                                      return { ...dataElement, value: formatValue(dataElementValue?.value) };
+                                    }),
+                                  })),
+                                };
 
-                                  newForm[sectionName] = [...(newForm[sectionName] || []), updatedSection];
+                                newForm[sectionName] = [...(newForm[sectionName] || []), updatedSection];
 
-                                  const newForms = [...forms];
-                                  newForms[formIndex] = newForm;
+                                const newForms = [...forms];
+                                newForms[formIndex] = newForm;
 
-                                  setForms(newForms);
-                                  setLoading(false);
-                                }
+                                setForms(newForms);
+                                setLoading(false);
                               }
-                            }}
-                            block
-                            icon={<PlusCircleOutlined />}
-                            loading={loading}
-                            disabled={loading}
+                            }
+                          }}
+                          block
+                          icon={<PlusCircleOutlined />}
+                          loading={loading}
+                          disabled={loading}
                         >
                           Add {sectionName?.toLowerCase()}
                         </Button>

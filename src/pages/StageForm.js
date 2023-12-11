@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Breadcrumb, Spin } from "antd";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
+import useCompleteEvent from "../hooks/useCompleteEvent";
 import { createUseStyles } from "react-jss";
 import CardItem from "../components/CardItem";
 import { CircularLoader } from "@dhis2/ui";
@@ -14,6 +15,7 @@ import { DoubleLeftOutlined } from "@ant-design/icons";
 import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
 import { formatForm } from "../lib/formFormatter";
+import {setAttributes} from "../redux/actions";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -53,6 +55,8 @@ export default function StageForm() {
 
   const location = useLocation();
 
+  const { activateAllEvents } = useCompleteEvent();
+
   const parseQueryString = () => {
     const queryString = location.search.substring(1);
     const params = queryString.split("&");
@@ -72,6 +76,8 @@ export default function StageForm() {
 
   const { getData } = UseDataStore();
 
+    const dispatch = useDispatch();
+
   const { stage, enrollment, trackedEntityInstance } = useParams();
 
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
@@ -81,10 +87,25 @@ export default function StageForm() {
   const stageForm = stages?.find((item) => item.stageId === stage);
 
   const getEnrollment = async () => {
-    const data = await getEnrollmentData();
+    const firstFetch = await getEnrollmentData();
+    let data;
+    if (firstFetch?.events?.some((event) => event?.status === "COMPLETED")) {
+      await activateAllEvents(firstFetch?.events);
+      data = await getEnrollmentData();
+    } else {
+      data = firstFetch;
+    }
 
     if (data?.status) {
-        setEnrollmentData(data);
+      const attributes = data?.attributes?.map((attribute) => ({
+        id: attribute.attribute,
+        name: attribute?.displayName,
+        valueType: attribute?.valueType,
+        value: attribute?.value,
+      }));
+
+      dispatch(setAttributes(attributes));
+      setEnrollmentData(data);
       const stageValues = await filterAndSortEvents(data.events);
       if (stageValues?.length > 0 && stageForm) {
         const dataForm = formatForm(stageForm, stageValues);
@@ -99,7 +120,9 @@ export default function StageForm() {
 
     const filteredEvents = events?.filter((event) => {
       if (queryParams.event) {
-        const repeatEvents = mappings.filter((mapping) => mapping.parentEvent === queryParams.event).map((mapping) => mapping.event);
+        const repeatEvents = mappings
+          .filter((mapping) => mapping.parentEvent === queryParams.event)
+          .map((mapping) => mapping.event);
         return event.event === queryParams.event || repeatEvents.includes(event.event);
       }
       return event.programStage === stage || repeatIds?.includes(event.programStage);
@@ -110,7 +133,6 @@ export default function StageForm() {
     }
     return [];
   };
-
 
   useEffect(() => {
     if (stageForm) {
@@ -141,7 +163,13 @@ export default function StageForm() {
         ) : (
           <Spin spinning={loading}>
             <div className={classes.stage}>
-              <Stage getEnrollment={getEnrollment} enrollmentData={enrollmentData} forms={forms} surgeryLink={surgeryLink} setForms={setForms} />
+              <Stage
+                getEnrollment={getEnrollment}
+                enrollmentData={enrollmentData}
+                forms={forms}
+                surgeryLink={surgeryLink}
+                setForms={setForms}
+              />
             </div>
           </Spin>
         )}

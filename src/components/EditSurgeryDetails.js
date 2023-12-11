@@ -5,7 +5,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 import InputItem from "./InputItem";
 import Section from "./Section";
 import { formatValue } from "../lib/mapValues";
-import { evaluateShowIf } from "../lib/helpers";
+import { evaluateShowIf, evaluateValidations } from "../lib/helpers";
 import dayjs from "dayjs";
 
 const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
@@ -62,6 +62,13 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
     }
   };
 
+  const dataElements = registration?.sections?.flatMap((section) => {
+    return section?.dataElements?.map((dataElement) => ({
+      id: dataElement.id,
+      name: dataElement.name,
+    }));
+  });
+
   return (
     <Drawer
       title="Edit Surgery Details"
@@ -117,6 +124,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                       required: dataElement?.required,
                       message: `Please input ${dataElement?.name}!`,
                     },
+                    ...evaluateValidations(dataElement?.validator, dataElement.valueType, formValues, dataElements),
                   ]}
                   disabled={dataElement?.disabled}
                   hidden={!shouldShow}
@@ -130,7 +138,8 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                     placeholder={dataElement.name}
                     disabled={
                       dataElement?.name?.toLowerCase()?.includes("age") ||
-                      dataElement?.name?.toLowerCase()?.includes("secondary id")
+                      dataElement?.name?.toLowerCase()?.includes("secondary id") ||
+                      dataElement?.name?.toLowerCase()?.includes("patient id")
                     }
                     onChange={(e) => {
                       const name = e?.target?.name || dataElement.id;
