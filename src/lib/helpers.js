@@ -268,3 +268,21 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
     };
   });
 };
+
+export const disableWoundInformation = (section, events, id, eventId) => {
+  //   find id the value of event id is "true". If true, and section title includes "INFECTION INFORMATION" or "Symptoms" return true, else return false
+
+  const eventValues = events
+    ?.filter((event) => event.event === eventId)
+    .flatMap((event) => {
+      const value = event?.dataValues?.find((dataValue) => dataValue?.dataElement === id)?.value;
+      return value ? JSON.parse(value) : null;
+    })
+    ?.filter((value) => value);
+
+  const sectionTitle = section?.toLowerCase();
+  const infectionInformation = sectionTitle?.includes("infection information");
+  const symptoms = sectionTitle?.includes("symptoms");
+
+  return eventValues?.length === 0 && (infectionInformation || symptoms);
+};

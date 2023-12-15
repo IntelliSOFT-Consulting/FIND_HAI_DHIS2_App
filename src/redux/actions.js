@@ -39,3 +39,10 @@ export const setAttributes = (attributes) => (dispatch) => {
     payload: attributes,
   });
 }
+
+export const setDataElements = (dataElements) => (dispatch) => {
+  dispatch({
+    type: "DATA_ELEMENTS",
+    payload: dataElements,
+  });
+}

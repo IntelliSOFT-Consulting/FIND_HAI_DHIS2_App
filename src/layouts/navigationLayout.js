@@ -11,7 +11,8 @@ import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import routes from "../routes";
 import UseGetForms from "../hooks/useGetForms";
 import UseGetOrgUnit from "../hooks/useGetOrgUnit";
-import { setUser } from "../redux/actions";
+import useGetDataElements from "../hooks/useGetDataElements";
+import { setUser, setDataElements } from "../redux/actions";
 import { useSelector, useDispatch } from "react-redux";
 
 const { Content, Sider } = Layout;
@@ -69,14 +70,24 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
 
   const orgUnit = useSelector((state) => state.orgUnit);
   const currentUser = useSelector((state) => state.user);
+  const dataElements = useSelector((state) => state.dataElements);
 
   const { getForms } = UseGetForms();
 
   const { getOrgUnit } = UseGetOrgUnit();
 
+  const { getDataElements } = useGetDataElements();
+
   const navigate = useNavigate();
 
   const location = useLocation();
+
+  const fetchElements = async () => {
+    if (!dataElements?.length > 0) {
+      const elem = await getDataElements();
+      dispatch(setDataElements(elem));
+    }
+  };
 
   const onClick = (e) => {
     navigate(e.key);
@@ -94,6 +105,8 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
     if (!currentUser?.id) {
       dispatch(setUser(user));
     }
+
+    fetchElements();
   }, [forms, orgUnit, user]);
 
   useEffect(() => {

@@ -4,6 +4,12 @@ import { createUseStyles } from "react-jss";
 import { evaluateShowIf } from "../lib/helpers";
 import { useSelector } from "react-redux";
 import { evaluateValidations } from "../lib/helpers";
+import dayjs from "dayjs";
+import weekday from "dayjs/plugin/weekday";
+import localeData from "dayjs/plugin/localeData";
+
+dayjs.extend(weekday);
+dayjs.extend(localeData);
 
 const useStyles = createUseStyles({
   form: {
@@ -58,6 +64,7 @@ const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
   const classes = useStyles();
 
   const attributes = useSelector((state) => state.attributes);
+  const dataElements = useSelector((state) => state.dataElements);
 
   const setInitialValues = async () => {
     const values = {};
@@ -78,6 +85,18 @@ const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
     }
     return values;
   });
+
+  // format eventsValues as one object
+  const eventsData = events?.reduce((acc, curr) => {
+    const values = {};
+    for (const dataValue of curr?.dataValues) {
+      values[dataValue.dataElement] = dataValue.value;
+    }
+    return {
+      ...acc,
+      ...values,
+    };
+  }, {});
 
   return (
     <div className={`${classes.form} ${form.repeatable ? classes.formList + " " + classes.fullWidth : ""}`}>
@@ -102,10 +121,12 @@ const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
                   required: dataElement.required,
                   message: `Please input ${dataElement.name}!`,
                 },
-                ...evaluateValidations(dataElement.validator, dataElement.valueType, { ...formValues, ...attributeValues }, [
-                  ...section?.dataElements,
-                  ...attributes,
-                ]),
+                ...evaluateValidations(
+                  dataElement.validator,
+                  dataElement.valueType,
+                  { ...eventsData, ...attributeValues },
+                  dataElements
+                ),
               ]}
             >
               <InputItem
@@ -142,6 +163,13 @@ const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
 
                   setFormValues(form.getFieldsValue());
                 }}
+                {...(dataElement.disablefuturedate
+                  ? {
+                      disabledDate: (current) => {
+                        return current && current > dayjs().endOf("day");
+                      },
+                    }
+                  : {})}
               />
               {warnings?.id === dataElement.id && (
                 <div style={{ color: "red", fontSize: "0.8rem", marginTop: "0.5rem" }}>{warnings?.message}</div>

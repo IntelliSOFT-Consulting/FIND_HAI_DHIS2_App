@@ -14,7 +14,9 @@ import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
 import useGetProgramInstances from "../hooks/useGetProgramInstances";
+import useFindPatientInstance from "../hooks/useFindPatientInstance";
 import { evaluateValidations } from "../lib/helpers";
+import { formatValue } from "../lib/mapValues";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -47,6 +49,7 @@ export default function Register() {
 
   const { getEnrollmentData } = UseGetEnrollmentsData();
   const { searchPatient } = useGetProgramInstances();
+  const { findPatientInstance } = useFindPatientInstance();
 
   const getConflicts = (error, registration) => {
     const importSummaries = error?.response?.importSummaries;
@@ -153,6 +156,40 @@ export default function Register() {
     await register(values);
   };
 
+  const fetchDemographics = async (attribute, value) => {
+    try {
+      const patient = await findPatientInstance(attribute, value, id, program);
+
+      if (patient) {
+        const formattedAttributes = patient.attributes?.reduce((acc, attribute) => {
+          const exceptions = [
+            "Scheduling",
+            "Surgery Location",
+            "Surgical Procedure",
+            "Date of Surgery",
+            "Date of Admission",
+            "Age",
+            "Secondary ID",
+          ];
+
+          if (!exceptions.includes(attribute.displayName)) {
+            acc[attribute.attribute] = formatValue(attribute.value);
+            if (attribute.displayName?.toLowerCase() === "date of birth") {
+              const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
+              form.setFieldsValue({
+                [ageField?.id]: dayjs().diff(dayjs(attribute.value), "year"),
+              });
+            }
+          }
+          return acc;
+        }, {});
+        form.setFieldsValue(formattedAttributes);
+      }
+    } catch (error) {
+      setError("Error fetching patient demographics");
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     const dataElements = registration?.sections?.flatMap((section) => {
@@ -182,7 +219,7 @@ export default function Register() {
                 const rules = [
                   {
                     required: dataElement.required,
-                    message: `Please input ${dataElement.displayName}!`,
+                    message: `Please input ${dataElement.name}!`,
                   },
                   ...evaluateValidations(dataElement.validator, dataElement.valueType, formValues, section?.dataElements),
                 ];
@@ -208,6 +245,11 @@ export default function Register() {
                         dataElement?.name?.toLowerCase()?.includes("age") ||
                         dataElement?.name?.toLowerCase()?.includes("secondary id")
                       }
+                      onBlur={async () => {
+                        if (dataElement?.name?.toLowerCase()?.includes("patient id")) {
+                          await fetchDemographics(dataElement.id, form.getFieldValue(dataElement.id));
+                        }
+                      }}
                     />
                   </Form.Item>
                 ) : null;

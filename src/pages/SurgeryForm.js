@@ -151,12 +151,14 @@ export default function SurgeryForm() {
       dataIndex: "actions",
       key: "actions",
       render: (text, record) => {
+        const stageForm = stages?.find((stage) => stage?.stageId === record?.programStage);
+
         const params =
-          record?.repeatable && record?.title?.toLowerCase()?.includes("post-operative") ? `?event=${record?.event}` : "";
+          record?.repeatable && stageForm?.title?.toLowerCase()?.includes("post-operative") ? `?event=${record?.event}` : "";
         const userCanEdit = user?.userRoles?.some((role) =>
           ["superuser", "administrator", "admin", "pca - administrator"].includes(role?.displayName?.toLowerCase())
         );
-        const stageForm = stages?.find((stage) => stage?.stageId === record?.programStage);
+
         const sampleSentForCulture = disableMicrobiology(stageForm, enrollmentData?.events);
 
         if (!sampleSentForCulture && stageForm?.title?.toLowerCase()?.includes("post-operative")) {

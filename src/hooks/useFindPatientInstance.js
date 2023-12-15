@@ -16,7 +16,7 @@ export default function UseFindPatientInstance() {
             ou,
             program,
             ouMode: "ACCESSIBLE",
-            fields: "trackedEntityInstance,trackedEntityType,attributes[attribute,value],enrollments[*]",
+            fields: "trackedEntityInstance,trackedEntityType,attributes[attribute,value,displayName],enrollments[*]",
             ...params,
           },
         },

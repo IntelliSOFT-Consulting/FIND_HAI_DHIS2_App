@@ -5,6 +5,7 @@ import Section from "./Section";
 import RenderFormSection from "./RenderFormSection";
 import { createUseStyles } from "react-jss";
 import useDeleteEvent from "../hooks/useDeleteEvent";
+import {useSelector} from "react-redux";
 
 const useStyles = createUseStyles({
   container: {

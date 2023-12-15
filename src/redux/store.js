@@ -7,6 +7,7 @@ import {
   orgUnitReducer,
   userReducer,
   attributesReducer,
+  dataElementsReducer,
 } from "./reducer";
 
 const searchFields = localStorage.getItem("searchFields") ? JSON.parse(localStorage.getItem("searchFields")) : null;
@@ -22,6 +23,7 @@ const reducer = combineReducers({
   orgUnit: orgUnitReducer,
   user: userReducer,
   attributes: attributesReducer,
+  dataElements: dataElementsReducer,
 });
 
 const composeEnhancer = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;

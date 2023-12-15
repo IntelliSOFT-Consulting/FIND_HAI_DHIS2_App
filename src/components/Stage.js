@@ -15,7 +15,7 @@ import { debounce } from "lodash";
 import SectionForm from "./SectionForm";
 import Alert from "./Alert";
 import { useSelector } from "react-redux";
-import { evaluateShowIf } from "../lib/helpers";
+import { disableWoundInformation, evaluateShowIf } from "../lib/helpers";
 
 const useStyles = createUseStyles({
   form: {
@@ -64,7 +64,7 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Stage({ forms, setForms, surgeryLink, enrollmentData, getEnrollment }) {
+export default function Stage({ forms, setForms, surgeryLink, enrollmentData, getEnrollment, eventId }) {
   const [loading, setLoading] = useState(false);
   const [validate, setValidate] = useState(false);
   const [validationErrors, setValidationErrors] = useState([]);
@@ -191,6 +191,24 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
     return arr;
   });
 
+  // get the id of this data element name "Does the wound present signs of infection?"
+  const woundInfectionId = stageForm?.sections?.flatMap((section) => {
+    return section?.dataElements?.find((dataElement) => dataElement.name === "Does the wound present signs of infection?") || {};
+  });
+
+  // create a function that will check if the value of the data element is "true" or "false" from events. If is false, then dont show the sections "INFECTION INFORMATION" and "Symptoms"
+  const checkWoundInfection = (events, section) => {
+    if (["INFECTION INFORMATION", "Symptoms"]?.includes(section)) {
+      const stageEvents = events?.filter((event) => event.programStage === stageId);
+      const dataValue = stageEvents
+        ?.flatMap((event) => event.dataValues)
+        .find((dataValue) => dataValue.dataElement === woundInfectionId[0]?.id);
+
+      return dataValue?.value === "false" ? false : true;
+    }
+    return true;
+  };
+
   return (
     <div>
       <div>
@@ -198,23 +216,35 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
           <React.Fragment key={formIndex}>
             {form.sections
               ? form.sections?.map((section, sectionIndex) => {
+                  console.log("section", section);
                   return (
-                    <SectionForm
-                      key={formIndex}
-                      section={section}
-                      saveValue={debouncedSaveValue}
-                      validate={validate}
-                      validationErrors={validationErrors}
-                      setValidationErrors={setValidationErrors}
-                      setIsValidating={setIsValidating}
-                      isLastSection={sectionIndex === form.sections?.length - 1 && Array.isArray(forms[forms?.length - 1])}
-                      events={enrollmentData?.events}
-                    />
+                    <div
+                      style={
+                        disableWoundInformation(section?.title, enrollmentData?.events, "fkxHVloTLwR", eventId)
+                          ? { display: "none" }
+                          : {}
+                      }
+                    >
+                      <SectionForm
+                        key={formIndex}
+                        section={section}
+                        saveValue={debouncedSaveValue}
+                        validate={validate}
+                        validationErrors={validationErrors}
+                        setValidationErrors={setValidationErrors}
+                        setIsValidating={setIsValidating}
+                        isLastSection={sectionIndex === form.sections?.length - 1 && Array.isArray(forms[forms?.length - 1])}
+                        events={enrollmentData?.events}
+                      />
+                    </div>
                   );
                 })
               : Object.entries(form).map(([sectionName, formItems], sectionIndex) =>
                   formatEvents?.length > 0 &&
-                  sectionName?.toLowerCase()?.includes("antimicrobial susceptibility testing") ? null : (
+                  sectionName?.toLowerCase()?.includes("antimicrobial susceptibility testing") ? null : checkWoundInfection(
+                      enrollmentData?.events,
+                      sectionName
+                    ) ? (
                     <React.Fragment key={sectionIndex}>
                       <Section title={sectionName} />
                       {formItems.map((formItem, idx) => (
@@ -297,7 +327,7 @@ export default function Stage({ forms, setForms, surgeryLink, enrollmentData, ge
                         </Button>
                       </div>
                     </React.Fragment>
-                  )
+                  ) : null
                 )}
           </React.Fragment>
         ))}

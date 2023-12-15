@@ -95,7 +95,7 @@ export default function Home() {
       <div className={classes.links}>
         <div className={classes.header}>
           <h4>Welcome Home</h4>
-          <h1>HOSPITAL ACQUIRED INFECTIONS SURVEILLANCE FORMS.</h1>
+          <h1>HOSPITAL ACQUIRED INFECTIONS SURVEILLANCE</h1>
         </div>
         <Link to="/surgeries" className={classes.linkItem}>
           <div className={classes.iconSection}>

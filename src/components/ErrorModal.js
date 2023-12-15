@@ -33,6 +33,7 @@ export default function ErrorModal({ enrollments, enroll, values, setEnrollments
       }}
       onOk={() => enroll(values)}
       okText="Register new surgery?"
+      title="The patient with this ID already Exists"
     >
       {renderData()}
     </Modal>

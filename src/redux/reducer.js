@@ -60,3 +60,13 @@ export const attributesReducer = (state = [], action) => {
       return state;
   }
 };
+
+export const dataElementsReducer = (state = [], action) => {
+  switch (action.type) {
+    case "DATA_ELEMENTS":
+      return action.payload;
+
+    default:
+      return state;
+  }
+};

@@ -24,6 +24,7 @@ export default function InputItem({ type, name, ...props }) {
             style={{
               width: "100%",
             }}
+
           />
         );
       default:

@@ -169,6 +169,7 @@ export default function StageForm() {
                 forms={forms}
                 surgeryLink={surgeryLink}
                 setForms={setForms}
+                eventId={queryParams.event}
               />
             </div>
           </Spin>
