@@ -10,8 +10,8 @@ import { createUseStyles } from "react-jss";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import routes from "../routes";
 import UseGetForms from "../hooks/useGetForms";
-import UseGetOrgUnit from "../hooks/useGetOrgUnit";
-import useGetDataElements from "../hooks/useGetDataElements";
+import UseOrgUnit from "../hooks/useOrgUnit";
+import useDataElements from "../hooks/useDataElements";
 import { setUser, setDataElements } from "../redux/actions";
 import { useSelector, useDispatch } from "react-redux";
 
@@ -74,9 +74,9 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
 
   const { getForms } = UseGetForms();
 
-  const { getOrgUnit } = UseGetOrgUnit();
+  const { getOrgUnit } = UseOrgUnit();
 
-  const { getDataElements } = useGetDataElements();
+  const { getDataElements } = useDataElements();
 
   const navigate = useNavigate();
 

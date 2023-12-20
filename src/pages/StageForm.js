@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Breadcrumb, Spin } from "antd";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
-import useCompleteEvent from "../hooks/useCompleteEvent";
+import useInstances from "../hooks/useInstances";
+import useCompleteEvent from "../hooks/useEvents";
 import { createUseStyles } from "react-jss";
 import CardItem from "../components/CardItem";
 import { CircularLoader } from "@dhis2/ui";
@@ -15,7 +15,7 @@ import { DoubleLeftOutlined } from "@ant-design/icons";
 import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
 import { formatForm } from "../lib/formFormatter";
-import {setAttributes} from "../redux/actions";
+import { setAttributes } from "../redux/actions";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -46,7 +46,7 @@ const useStyles = createUseStyles({
 });
 
 export default function StageForm() {
-  const [forms, setForms] = useState(null);
+  const [dataValues, setDataValues] = useState(null);
   const [loading, _setLoading] = useState(false);
   const [success, _setSuccess] = useState(null);
   const [enrollmentData, setEnrollmentData] = useState(null);
@@ -76,13 +76,13 @@ export default function StageForm() {
 
   const { getData } = UseDataStore();
 
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   const { stage, enrollment, trackedEntityInstance } = useParams();
 
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
 
-  const { getEnrollmentData } = UseGetEnrollmentsData();
+  const { getEnrollmentData } = useInstances();
 
   const stageForm = stages?.find((item) => item.stageId === stage);
 
@@ -108,15 +108,19 @@ export default function StageForm() {
       setEnrollmentData(data);
       const stageValues = await filterAndSortEvents(data.events);
       if (stageValues?.length > 0 && stageForm) {
-        const dataForm = formatForm(stageForm, stageValues);
-        setForms(dataForm);
+        const dataForm = formatForm(
+          stageForm,
+          stageValues
+        );
+        setDataValues(dataForm);
       }
     }
   };
 
   const filterAndSortEvents = async (events) => {
     const mappings = await getData("repeatSections", "postOperative");
-    const repeatIds = stageForm?.children?.map((child) => child?.stageId);
+    const repeatIds = [...new Set(stageForm?.sections?.map((section) => section?.stageId))];
+
 
     const filteredEvents = events?.filter((event) => {
       if (queryParams.event) {
@@ -158,7 +162,7 @@ export default function StageForm() {
         ]}
       />
       <CardItem title={stageForm?.title}>
-        {!forms ? (
+        {!dataValues || !stageForm ? (
           <CircularLoader />
         ) : (
           <Spin spinning={loading}>
@@ -166,10 +170,11 @@ export default function StageForm() {
               <Stage
                 getEnrollment={getEnrollment}
                 enrollmentData={enrollmentData}
-                forms={forms}
+                dataValues={dataValues}
                 surgeryLink={surgeryLink}
-                setForms={setForms}
+                setDataValues={setDataValues}
                 eventId={queryParams.event}
+                stageForm={stageForm}
               />
             </div>
           </Spin>

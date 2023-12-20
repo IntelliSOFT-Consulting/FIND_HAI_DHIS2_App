@@ -1,49 +1,31 @@
 import { formatValue } from "./mapValues";
 
-const processSection = (section, event) => {
-  const { event: ev, status, trackedEntityInstance, enrollment, enrollmentStatus, orgUnit, program, programStage } = event;
+export const formatForm = (stage, values) => {
+  const formattedFormValues = {};
 
-  return {
-    title: section.title,
-    stageId: event.programStage,
-    event: ev,
-    status,
-    trackedEntityInstance,
-    enrollment,
-    enrollmentStatus,
-    orgUnit,
-    program,
-    programStage,
-    dataElements: section.dataElements.map((dataElement) => {
-      const dataElementValue = event?.dataValues?.find((dataValue) => dataValue.dataElement === dataElement.id);
-      return {
-        ...dataElement,
-        value: formatValue(dataElementValue?.value),
-      };
-    }),
-  };
-};
+  stage?.sections?.forEach((section) => {
+    if (section?.repeatable && section.stageId !== "IbB9QEgQU6D") {
+      const sectionValues = values?.filter((value) => value?.programStage === section?.stageId);
 
-export const formatForm = (form, events) => {
-  const mainEventValue = events?.find((event) => event.programStage === form.stageId && form.sections) || {};
+      formattedFormValues[section?.stageId] = sectionValues?.map((value) => {
+        return section.dataElements?.reduce((acc, currDataElement) => {
+          const itemValue = value?.dataValues?.find((dataValue) => dataValue?.dataElement === currDataElement?.id)?.value;
+          return {
+            ...acc,
+            [currDataElement?.id]: itemValue === undefined ? null : formatValue(itemValue),
+          };
+        }, {});
+      });
+    } else {
+      const sectionValues = values?.find((value) => value?.programStage === section?.stageId);
+      section?.dataElements?.forEach((dataElement) => {
+        const formattedValue = formatValue(
+          sectionValues?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value
+        );
+        formattedFormValues[dataElement?.id] = formattedValue === undefined ? null : formattedValue;
+      });
+    }
+  });
 
-  form.sections = form?.sections?.map((section) => mainEventValue && processSection(section, mainEventValue)) || [];
-
-  const childrenFormsDataFlattened = (form?.children || []).flatMap((childForm) =>
-    (events || [])
-      .filter((eventItem) => eventItem.programStage === childForm.stageId)
-      .map((eventItem) => {
-        const childFormCopy = { ...childForm };
-        childFormCopy.sections = childFormCopy.sections.map((section) => processSection(section, eventItem));
-        return childFormCopy;
-      })
-  );
-
-  const groupedChildrenFormsDataFlattened = childrenFormsDataFlattened.reduce((acc, form) => {
-    const stageId = form.title;
-    acc[stageId] = [...(acc[stageId] || []), form];
-    return acc;
-  }, {});
-
-  return [form, groupedChildrenFormsDataFlattened];
+  return formattedFormValues;
 };

@@ -11,18 +11,12 @@ export const getFullEvents = (enrollment, stage) => {
     events: fullEvents?.map((event) => ({
       ...event,
       repeatable: stage?.repeatable,
-      repeattype: stage?.repeattype,
+      multiple: stage?.multiple,
     })),
   };
 };
 
 export const isAddStageActive = (stage, enrollmentData) => {
   const events = getFullEvents(stage)?.events?.filter((event) => event?.dataValues?.length > 0);
-  return (
-    stage?.repeatable &&
-    (!stage?.repeattype || (stage?.repeattype && stage?.repeattype !== "section")) &&
-    events?.length > 0 &&
-    events?.length < 3 &&
-    enrollmentData?.status === "ACTIVE"
-  );
+  return stage?.repeatable && !stage?.multiple && events?.length > 0 && events?.length < 3 && enrollmentData?.status === "ACTIVE";
 };

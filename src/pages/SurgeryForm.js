@@ -3,9 +3,9 @@ import { Table, Button, Badge, Breadcrumb, Tooltip } from "antd";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { setAttributes } from "../redux/actions";
-import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
-import UseCreateEvent from "../hooks/useCreateEvent";
-import UseUpdateEnrollment from "../hooks/useUpdateEnrollment";
+import UseGetEnrollmentsData from "../hooks/useInstances";
+import useEnrollment from "../hooks/useEnrollment";
+import UseCreateEvent from "../hooks/useEvents";
 import UseDataStore from "../hooks/useDataStore";
 import { formatValues } from "../lib/mapValues";
 import Section from "../components/Section";
@@ -68,7 +68,7 @@ export default function SurgeryForm() {
 
   const classes = useStyles();
 
-    const dispatch = useDispatch();
+  const dispatch = useDispatch();
 
   const { trackedEntityInstance, enrollment } = useParams();
   const navigate = useNavigate();
@@ -76,8 +76,8 @@ export default function SurgeryForm() {
   const { getEnrollmentData, createEvent, createStageEvents, updateEnrollment, getData, saveData } = {
     ...UseGetEnrollmentsData(),
     ...UseCreateEvent(),
-    ...UseUpdateEnrollment(),
     ...UseDataStore(),
+    ...useEnrollment(),
   };
 
   const getEnrollment = async () => {
@@ -103,7 +103,7 @@ export default function SurgeryForm() {
         events: stageValues.map((stageValue) => ({
           ...stageValue,
           repeatable: stage.repeatable,
-          repeattype: stage.repeattype,
+          multiple: stage.multiple,
           title: stage.title,
         })),
       };
@@ -153,15 +153,14 @@ export default function SurgeryForm() {
       render: (text, record) => {
         const stageForm = stages?.find((stage) => stage?.stageId === record?.programStage);
 
-        const params =
-          record?.repeatable && stageForm?.title?.toLowerCase()?.includes("post-operative") ? `?event=${record?.event}` : "";
+        const params = record?.repeatable && stageForm?.multiple ? `?event=${record?.event}` : "";
         const userCanEdit = user?.userRoles?.some((role) =>
           ["superuser", "administrator", "admin", "pca - administrator"].includes(role?.displayName?.toLowerCase())
         );
 
         const sampleSentForCulture = disableMicrobiology(stageForm, enrollmentData?.events);
 
-        if (!sampleSentForCulture && stageForm?.title?.toLowerCase()?.includes("post-operative")) {
+        if (!sampleSentForCulture && stageForm?.multiple) {
           setIsMicrobiologyDisabled(true);
         }
         const isDisabled = stageForm?.title?.toLowerCase()?.includes("pathogen information") && isMicrobiologyDisabled;
@@ -192,7 +191,7 @@ export default function SurgeryForm() {
 
     let params = "";
 
-    const isRepeat = stage?.repeatable && stage.title?.toLowerCase()?.includes("post-operative");
+    const isRepeat = stage?.repeatable && stage.multiple;
     if (emptyEvent && !isNew) {
       params = isRepeat ? `?event=${emptyEvent}` : "";
       return navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
@@ -203,8 +202,8 @@ export default function SurgeryForm() {
       mappings = [];
     }
 
-    const childStages = stage?.children?.map((child) => child?.stageId);
-    const stageIds = stage?.sections?.length ? [stage.stageId, ...childStages] : childStages;
+    const stageIds = [...new Set(stage?.sections?.map((section) => section?.stageId))];
+
     const events = await createStageEvents(stageIds, []);
     if (events) {
       // remove first event and remain with the rest
@@ -352,7 +351,7 @@ export default function SurgeryForm() {
                   }
                 />
 
-                {!stage?.repeatable || (stage?.repeatable && !stage?.title?.toLowerCase()?.includes("post-operative"))
+                {!stage?.repeatable || (stage?.repeatable && !stage?.multiple)
                   ? stage?.events?.slice(0, 1)?.map((event, i) => (
                       <div className={classes.event} key={i}>
                         <Table
@@ -381,15 +380,13 @@ export default function SurgeryForm() {
                         )
                     )}
 
-                {stage?.repeatable &&
-                  stage?.title?.toLowerCase()?.includes("post-operative") &&
-                  getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
-                    <div className={classes.newEvent}>
-                      <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
-                        Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
-                      </Button>
-                    </div>
-                  )}
+                {stage?.multiple && getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
+                  <div className={classes.newEvent}>
+                    <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
+                      Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })}

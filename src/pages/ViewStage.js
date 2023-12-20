@@ -6,14 +6,14 @@ import { DoubleLeftOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
 import Section from "../components/Section";
 import CardItem from "../components/CardItem";
-import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
+import useGetInstances from "../hooks/useInstances";
 import UseDataStore from "../hooks/useDataStore";
 import { formatDisplayValue } from "../lib/mapValues";
 
 const ViewStage = () => {
   const [columns, setColumns] = useState(null);
   const { stages } = useSelector((state) => state.forms);
-  const { getEnrollmentData } = UseGetEnrollmentsData();
+  const { getEnrollmentData } = useGetInstances();
   const { getData } = UseDataStore();
   const { stage, enrollment, trackedEntityInstance } = useParams();
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
@@ -45,7 +45,7 @@ const ViewStage = () => {
 
   const filterAndSortEvents = async (events) => {
     const mappings = await getData("repeatSections", "postOperative");
-    const repeatIds = stageForm?.children?.map((child) => child?.stageId);
+    const repeatIds = [...new Set(stageForm?.sections?.filter((section) => section?.repeatable && !section.multiple)?.map((section) => section?.stageId))]
     return events
       ?.filter((event) => {
         if (queryParams.event) {
@@ -66,7 +66,7 @@ const ViewStage = () => {
   }, [stageForm, location]);
 
   const createColumns = (formData, data) => {
-    return [...formData?.sections, ...(formData?.children?.flatMap((child) => child?.sections) || [])]?.map((section) => {
+    return [...formData?.sections]?.map((section) => {
       const sectionData = data?.filter((item) => item?.programStage === (section?.stageId || section.programStage));
       const sectionValues = sectionData?.flatMap((item) =>
         item?.dataValues?.reduce((acc, curr) => {

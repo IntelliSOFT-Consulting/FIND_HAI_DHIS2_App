@@ -8,13 +8,11 @@ import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
 import ErrorModal from "../components/ErrorModal";
 import { useNavigate } from "react-router-dom";
-import UseGetEnrollmentsData from "../hooks/UseGetEnrollmentsData";
 import { evaluateShowIf, generateId } from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
-import useGetProgramInstances from "../hooks/useGetProgramInstances";
-import useFindPatientInstance from "../hooks/useFindPatientInstance";
+import useGetProgramInstances from "../hooks/useInstances";
 import { evaluateValidations } from "../lib/helpers";
 import { formatValue } from "../lib/mapValues";
 
@@ -47,9 +45,7 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  const { getEnrollmentData } = UseGetEnrollmentsData();
-  const { searchPatient } = useGetProgramInstances();
-  const { findPatientInstance } = useFindPatientInstance();
+  const { searchPatient, getEnrollmentData, findPatientInstance } = useGetProgramInstances();
 
   const getConflicts = (error, registration) => {
     const importSummaries = error?.response?.importSummaries;

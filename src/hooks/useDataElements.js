@@ -1,6 +1,6 @@
 import { useDataEngine } from "@dhis2/app-runtime";
 
-const useGetDataElements = () => {
+const useDataElements = () => {
   const engine = useDataEngine();
   const getDataElements = async () => {
     const query = {
@@ -36,4 +36,4 @@ const useGetDataElements = () => {
     return { getDataElements };
 };
 
-export default useGetDataElements;
+export default useDataElements;

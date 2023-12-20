@@ -18,7 +18,9 @@ const useStyles = createUseStyles({
   card: {
     height: "fit-content !important",
     width: "100%",
-    overflow: 'auto'
+    "& .ant-table-wrapper": {
+      overflow: "auto",
+    },
   },
   cardTitle: {
     backgroundColor: "#2C6693",
@@ -43,6 +45,7 @@ export default function CardItem({ title, footer, children }) {
         style={{
           padding: 20,
           width: "100%",
+          overflow: "auto",
         }}
       >
         {children}

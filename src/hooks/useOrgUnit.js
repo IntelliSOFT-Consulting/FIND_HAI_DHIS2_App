@@ -2,7 +2,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 import { setOrgUnit } from "../redux/actions";
 import { useDispatch } from "react-redux";
 
-export default function UseGetOrgUnit() {
+export default function UseOrgUnit() {
   const engine = useDataEngine();
   const dispatch = useDispatch();
 

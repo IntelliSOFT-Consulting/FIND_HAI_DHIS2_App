@@ -1,6 +1,6 @@
 import { useDataEngine } from "@dhis2/app-runtime";
 
-export default function UseCreateEnrollment() {
+export default function UseEnrollment() {
   const engine = useDataEngine();
 
   const createEnrollment = async (patientId, program, orgUnit) => {
@@ -23,5 +23,21 @@ export default function UseCreateEnrollment() {
     }
   };
 
-  return { createEnrollment };
+  const updateEnrollment = async (enrollment, data) => {
+    try {
+      const response = await engine.mutate({
+        resource: `enrollments/${enrollment}`,
+        type: "update",
+        data: {
+          ...data,
+        },
+      });
+
+      return response;
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  return { createEnrollment, updateEnrollment };
 }

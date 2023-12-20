@@ -70,11 +70,35 @@ export function formatSurgery(program) {
   const mainStages = allStages?.filter((stage) => !stage?.parentstage);
   const stages = mainStages.map((stage) => {
     const children = allStages.filter((child) => child?.parentstage === stage?.id);
-    const repeatable = stage?.repeatable && !stage?.name?.toLowerCase()?.includes("post-operative");
-    const stageWithoutChildren = { ...stage };
-    delete stageWithoutChildren?.children;
-    const stageChildren = repeatable ? [stageWithoutChildren, ...children] : children;
-    return repeatable ? { ...stage, programStageSections: [], children: stageChildren } : { ...stage, children: stageChildren };
+    const programStageSections = stage?.programStageSections?.map((section) => {
+      return {
+        ...section,
+        dataElements: section?.dataElements?.map((dataElement) => {
+          return {
+            ...dataElement,
+            ...formatAttributeValues(dataElement?.attributeValues),
+          };
+        }),
+      };
+    });
+
+    const childrenProgramStageSections = children?.flatMap((child) =>
+      child?.programStageSections?.map((section) => {
+        return {
+          ...section,
+          repeatable: child.repeatable,
+          dataElements: section?.dataElements?.map((dataElement) => {
+            return {
+              ...dataElement,
+              ...formatAttributeValues(dataElement?.attributeValues),
+            };
+          }),
+        };
+      })
+    );
+    stage.programStageSections = programStageSections?.concat(childrenProgramStageSections);
+
+    return stage;
   });
 
   const formatStage = (stage) => {
@@ -84,11 +108,13 @@ export function formatSurgery(program) {
       stageId: stage.id,
       repeatable: stage.repeatable,
       showif: stage.showif,
-      sections: stage.programStageSections?.map((section) => {
+      multiple: stage.multiple,
+      sections: stage.programStageSections?.map((section, index) => {
         return {
           title: section.displayName,
           sectionId: section.id,
-          stageId: stage.id,
+          stageId: section.programStage?.id,
+          repeatable: section.programStage?.id === stage.id ? stage.repeatable : section.repeatable,
           dataElements: section.dataElements.map((dataElement) => {
             return {
               name: dataElement.displayName,
@@ -100,7 +126,6 @@ export function formatSurgery(program) {
           }),
         };
       }),
-      children: stage.children?.map((child) => formatStage(child)),
     };
   };
 
@@ -166,8 +191,8 @@ export function generateWeeks() {
   return weeksArray;
 }
 
-export const evaluateShowIf = (str, formValues) => {
-  if (!str) return true;
+export const evaluateShowIf = (str, formValues = {}) => {
+  if (!str || !formValues || Object.keys(formValues)?.length === 0) return false;
   const [fieldId, operator, value] = str.split(":");
   const fieldValue = formValues[fieldId]?.toString()?.toLowerCase();
   const valueArray = value?.split(",").map((item) => item?.toLowerCase());
@@ -285,4 +310,13 @@ export const disableWoundInformation = (section, events, id, eventId) => {
   const symptoms = sectionTitle?.includes("symptoms");
 
   return eventValues?.length === 0 && (infectionInformation || symptoms);
+};
+
+export const debounce = (func, wait) => {
+  let timeout;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
 };
