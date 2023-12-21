@@ -6,7 +6,7 @@ import InputItem from "./InputItem";
 import Section from "./Section";
 import { useNavigate } from "react-router-dom";
 
-const Overdue = ({ overdue, setOverdue, onFinish }) => {
+const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue }) => {
   const { stages } = useSelector((state) => state.forms);
   const outcome = stages?.find((stage) => stage?.title?.toLowerCase()?.includes("outcome"));
   const [form] = Form.useForm();
@@ -28,7 +28,15 @@ const Overdue = ({ overdue, setOverdue, onFinish }) => {
   );
 
   return (
-    <Modal open={overdue} onClose={() => setOverdue(false)} title="This form is overdue" footer={footer}>
+    <Modal
+      open={overdue || discontinue}
+      onClose={() => {
+        setOverdue(false);
+        setDiscontinue(false);
+      }}
+      title={overdue ? "This form is overdue" : "Discontinue surveillance"}
+      footer={footer}
+    >
       <Form form={form} layout="vertical" onFinish={(values) => onFinish(values, outcome?.id)}>
         {outcome?.sections?.map((section) => (
           <>

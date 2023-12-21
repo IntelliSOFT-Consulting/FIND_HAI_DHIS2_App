@@ -50,6 +50,7 @@ export default function StageForm() {
   const [loading, _setLoading] = useState(false);
   const [success, _setSuccess] = useState(null);
   const [enrollmentData, setEnrollmentData] = useState(null);
+  const [stageEvents, setStageEvents] = useState([]);
 
   const { stages } = useSelector((state) => state.forms);
 
@@ -107,6 +108,7 @@ export default function StageForm() {
       dispatch(setAttributes(attributes));
       setEnrollmentData(data);
       const stageValues = await filterAndSortEvents(data.events);
+      setStageEvents(stageValues)
       if (stageValues?.length > 0 && stageForm) {
         const dataForm = formatForm(
           stageForm,
@@ -175,6 +177,7 @@ export default function StageForm() {
                 setDataValues={setDataValues}
                 eventId={queryParams.event}
                 stageForm={stageForm}
+                stageEvents={stageEvents}
               />
             </div>
           </Spin>

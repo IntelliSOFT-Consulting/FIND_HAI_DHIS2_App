@@ -244,6 +244,20 @@ export const disableMicrobiology = (form, events) => {
   return samplesSentForCultureValues?.length;
 };
 
+const getEndOfDay = () => {
+  return new Date(new Date().setHours(23, 59, 59, 999));
+};
+
+// Function to get start of day
+const getStartOfDay = () => {
+  return new Date(new Date().setHours(0, 0, 0, 0));
+};
+
+// Function to format date
+const formatDate = (date) => {
+  return new Date(format(new Date(date), "yyyy-MM-dd"));
+};
+
 export const evaluateValidations = (validations, fieldType, formValues, dataElements) => {
   if (!validations) return [];
 
@@ -258,11 +272,14 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
     if (fieldType === "DATE") {
       if (fieldId === "today") {
         field.name = fieldId;
-        fieldValue = ["lt", "le", "eq", "gt"].includes(operator)
-          ? new Date(new Date().setHours(23, 59, 59, 999))
-          : new Date(new Date().setHours(0, 0, 0, 0));
+        const operators = ["lt", "le", "eq", "gt"];
+        fieldValue = operators.includes(operator) ? getEndOfDay() : getStartOfDay();
       } else {
-        fieldValue = formValues[fieldId] ? new Date(format(new Date(formValues[fieldId]), "yyyy-MM-dd")) : new Date();
+        if (formValues[fieldId]) {
+          fieldValue = formatDate(formValues[fieldId]);
+        } else {
+          return Promise.resolve();
+        }
       }
     }
 
@@ -319,4 +336,26 @@ export const debounce = (func, wait) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(context, args), wait);
   };
+};
+
+// function that takes an array of events and returns one object with all the data values (key: value). Data element id is the key and the value is the value.
+export const formatDataValues = (events) => {
+  const dataValues = events?.flatMap((event) => {
+    return event?.dataValues?.map((dataValue) => {
+      return {
+        [dataValue?.dataElement]: dataValue?.value,
+      };
+    });
+  });
+  return Object.assign({}, ...dataValues);
+};
+
+//function that takes an array of attributes and returns one object with all the attribute values (key: value). Attribute id is the key and the value is the value.
+export const formatAttributes = (attributes) => {
+  const attributeValues = attributes?.flatMap((attribute) => {
+    return {
+      [attribute?.id]: attribute?.value,
+    };
+  });
+  return Object.assign({}, ...attributeValues);
 };

@@ -8,7 +8,14 @@ import UseDataStore from "../hooks/useDataStore";
 import useEnrollment from "../hooks/useEnrollment";
 import InputItem from "./InputItem";
 import useEvents from "../hooks/useEvents";
-import { evaluateShowIf } from "../lib/helpers";
+import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues } from "../lib/helpers";
+import { useSelector } from "react-redux";
+import dayjs from "dayjs";
+import weekday from "dayjs/plugin/weekday";
+import localeData from "dayjs/plugin/localeData";
+
+dayjs.extend(weekday);
+dayjs.extend(localeData);
 
 const useStyles = createUseStyles({
   form: {
@@ -63,7 +70,16 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Stage({ dataValues, setDataValues, stageForm, surgeryLink, enrollmentData, getEnrollment, eventId }) {
+export default function Stage({
+  dataValues,
+  setDataValues,
+  stageForm,
+  surgeryLink,
+  enrollmentData,
+  getEnrollment,
+  eventId,
+  stageEvents,
+}) {
   const [formValues, setFormValues] = useState(null);
   const [error, setError] = useState(null);
 
@@ -71,6 +87,9 @@ export default function Stage({ dataValues, setDataValues, stageForm, surgeryLin
   const classes = useStyles();
 
   const navigate = useNavigate();
+
+  const attributes = useSelector((state) => state.attributes);
+  const dataElements = useSelector((state) => state.dataElements);
 
   const { getData, saveData } = UseDataStore();
   const { updateEnrollment } = useEnrollment();
@@ -237,11 +256,14 @@ export default function Stage({ dataValues, setDataValues, stageForm, surgeryLin
   const showSection = (section, formValues) => {
     const formValuesObject = formValues ? formValues : dataValues;
     console.log(formValuesObject);
+    if (!formValuesObject) {
+      return true;
+    }
     if (section.title === "Antimicrobial Susceptibility Testing") {
       const specType = "ifncEH9ZQwB";
       const specTypeValues = formValuesObject ? formValuesObject[specType] : [];
 
-      const values = specTypeValues?.flatMap((item) => Object.values(item));
+      const values = specTypeValues?.flatMap((item) => (item ? Object.values(item) : []));
       const noGrowth = values?.some((value) => value === "No growth");
       return !noGrowth;
     }
@@ -269,9 +291,18 @@ export default function Stage({ dataValues, setDataValues, stageForm, surgeryLin
       }}
       initialValues={dataValues}
       onFinish={handleFinish}
+      autoComplete="off"
     >
       {stageForm.sections.map((section, index) => {
-        if (!showSection(section, formValues)) {
+        const values = formValues || dataValues;
+        if (!showSection(section, values)) {
+          const sectionValues = values[section.stageId];
+          if (sectionValues) {
+            const newFormValues = { ...values };
+            delete newFormValues[section.stageId];
+            form.setFieldsValue(newFormValues);
+            setFormValues(newFormValues);
+          }
           return null;
         }
         if (section.repeatable && section.stageId !== "IbB9QEgQU6D") {
@@ -299,6 +330,10 @@ export default function Stage({ dataValues, setDataValues, stageForm, surgeryLin
               </div>
               {section.dataElements?.map((dataElement) => {
                 const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues || dataValues);
+
+                if (!shouldShow) {
+                  form.setFieldValue(dataElement.id, null);
+                }
                 return (
                   shouldShow && (
                     <Form.Item
@@ -310,6 +345,16 @@ export default function Stage({ dataValues, setDataValues, stageForm, surgeryLin
                           required: dataElement.required,
                           message: `${dataElement.name} is required.`,
                         },
+                        ...evaluateValidations(
+                          dataElement.validator,
+                          dataElement.valueType,
+                          {
+                            ...formatAttributes(attributes),
+                            ...formatDataValues(stageEvents),
+                            ...(formValues || dataValues),
+                          },
+                          [...dataElements, ...attributes]
+                        ),
                       ]}
                       className={section.dataElements.length === 1 ? classes.fullWidth : null}
                     >
@@ -321,6 +366,13 @@ export default function Stage({ dataValues, setDataValues, stageForm, surgeryLin
                         }))}
                         placeholder={`Enter ${dataElement.name}`}
                         name={dataElement.id}
+                        {...(dataElement.disablefuturedate
+                          ? {
+                              disabledDate: (current) => {
+                                return current && current > dayjs().endOf("day");
+                              },
+                            }
+                          : {})}
                       />
                     </Form.Item>
                   )

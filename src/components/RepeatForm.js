@@ -5,6 +5,12 @@ import { createUseStyles } from "react-jss";
 import { PlusOutlined, MinusCircleOutlined, MinusCircleTwoTone } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { evaluateShowIf, evaluateValidations } from "../lib/helpers";
+import dayjs from "dayjs";
+import weekday from "dayjs/plugin/weekday";
+import localeData from "dayjs/plugin/localeData";
+
+dayjs.extend(weekday);
+dayjs.extend(localeData);
 
 const useStyles = createUseStyles({
   fullWidth: {
@@ -108,6 +114,13 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
                         }))}
                         placeholder={`Enter ${dataElement.name}`}
                         name={dataElement.id}
+                        {...(dataElement.disablefuturedate
+                          ? {
+                              disabledDate: (current) => {
+                                return current && current > dayjs().endOf("day");
+                              },
+                            }
+                          : {})}
                       />
                     </Form.Item>
                   )

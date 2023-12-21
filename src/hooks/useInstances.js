@@ -25,7 +25,7 @@ export default function UseInstances() {
             ou,
             program,
             ouMode: "ACCESSIBLE",
-            fields: "trackedEntityInstance,trackedEntityType,attributes[attribute,value,udisplayName],enrollments[*]",
+            fields: "trackedEntityInstance,trackedEntityType,attributes[attribute,value,name,displayName],enrollments[*]",
             ...params,
           },
         },

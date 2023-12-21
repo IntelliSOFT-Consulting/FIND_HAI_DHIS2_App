@@ -1,8 +1,8 @@
 const config = {
   type: "app",
-  title: "FIND HAI",
-  name: "FIND HAI",
-  description: "FIND HAI Form",
+  title: "HAI Surveillance App",
+  name: "HAI Surveillance App",
+  description: "HAI Surveillance App",
   version: "1.0",
 
   entryPoints: {

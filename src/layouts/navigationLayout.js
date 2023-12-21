@@ -55,11 +55,19 @@ function getItem(label, key, icon, children, type) {
     type,
   };
 }
+
+const domain = window.location.origin;
 const items = [
   getItem("Dashboard", "/", <HomeIcon />, null, "item"),
   getItem("Surgeries", "/surgeries", <ChartPieIcon />, null, "item"),
-  getItem("Reports", "/reports", <ArrowDownRightIcon />, null, "item"),
-  getItem("Configurations", "/configurations", <Cog6ToothIcon />, null, "item"),
+  getItem(<a href={`${domain}`}>Reports</a>, null, <ArrowDownRightIcon />, null, "item"),
+  getItem(
+    <a href={`${domain}/dhis-web-maintenance/index.html#/list/programSection/program`}>Configurations</a>,
+    null,
+    <Cog6ToothIcon />,
+    null,
+    "item"
+  ),
 ];
 const NavigationLayout = ({ user, program, organisationUnits }) => {
   const classes = styles();
