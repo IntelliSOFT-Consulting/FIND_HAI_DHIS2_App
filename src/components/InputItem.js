@@ -1,5 +1,5 @@
 import React from "react";
-import { Input, Radio, Select, DatePicker } from "antd";
+import { Input, Radio, Select, DatePicker, InputNumber } from "antd";
 
 export default function InputItem({ type, name, ...props }) {
   const renderInput = () => {
@@ -15,6 +15,16 @@ export default function InputItem({ type, name, ...props }) {
         );
       case "SELECT":
         return <Select showSearch name={name} {...props} />;
+      case "NUMBER" || "INTEGER":
+        return (
+          <InputNumber
+            style={{
+              width: "100%",
+            }}
+            name={name}
+            {...props}
+          />
+        );
       case "DATE":
         return (
           <DatePicker
@@ -24,7 +34,6 @@ export default function InputItem({ type, name, ...props }) {
             style={{
               width: "100%",
             }}
-
           />
         );
       default:

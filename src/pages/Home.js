@@ -79,7 +79,7 @@ export default function Home() {
   const links = [
     {
       title: "REPORTS",
-      path: `${domain}/dhis-web-event-reports/index.html`,
+      path: `${domain}`,
       icon: ArrowTopRightOnSquareIcon,
     },
     {

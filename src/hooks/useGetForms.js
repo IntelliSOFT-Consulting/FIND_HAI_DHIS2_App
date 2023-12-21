@@ -18,7 +18,7 @@ export default function UseGetForms() {
               "id",
               "name",
               "trackedEntityType",
-              "programStages[id,name,repeatable,attributeValues[attribute[id,name],value],programStageSections[id,displayName,description,dataElements[id,displayName,description,attributeValues[attribute[id,name],value],valueType,optionSet[id,displayName,options[id,displayName,code]]]]]",
+              "programStages[id,name,repeatable,attributeValues[attribute[id,name],value],programStageSections[id,displayName,programStage,description,dataElements[id,displayName,description,attributeValues[attribute[id,name],value],valueType,optionSet[id,displayName,options[id,displayName,code]]]]]",
               "programSections[name,trackedEntityAttributes[id,name,searchable,description,attributeValues[attribute[id,name],value],valueType,optionSet[options[displayName, code]]]",
             ],
             filter: "name:ilike:find",

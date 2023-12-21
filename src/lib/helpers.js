@@ -70,11 +70,35 @@ export function formatSurgery(program) {
   const mainStages = allStages?.filter((stage) => !stage?.parentstage);
   const stages = mainStages.map((stage) => {
     const children = allStages.filter((child) => child?.parentstage === stage?.id);
-    const repeatable = stage?.repeatable && !stage?.name?.toLowerCase()?.includes("post-operative");
-    const stageWithoutChildren = { ...stage };
-    delete stageWithoutChildren?.children;
-    const stageChildren = repeatable ? [stageWithoutChildren, ...children] : children;
-    return repeatable ? { ...stage, programStageSections: [], children: stageChildren } : { ...stage, children: stageChildren };
+    const programStageSections = stage?.programStageSections?.map((section) => {
+      return {
+        ...section,
+        dataElements: section?.dataElements?.map((dataElement) => {
+          return {
+            ...dataElement,
+            ...formatAttributeValues(dataElement?.attributeValues),
+          };
+        }),
+      };
+    });
+
+    const childrenProgramStageSections = children?.flatMap((child) =>
+      child?.programStageSections?.map((section) => {
+        return {
+          ...section,
+          repeatable: child.repeatable,
+          dataElements: section?.dataElements?.map((dataElement) => {
+            return {
+              ...dataElement,
+              ...formatAttributeValues(dataElement?.attributeValues),
+            };
+          }),
+        };
+      })
+    );
+    stage.programStageSections = programStageSections?.concat(childrenProgramStageSections);
+
+    return stage;
   });
 
   const formatStage = (stage) => {
@@ -84,11 +108,13 @@ export function formatSurgery(program) {
       stageId: stage.id,
       repeatable: stage.repeatable,
       showif: stage.showif,
-      sections: stage.programStageSections?.map((section) => {
+      multiple: stage.multiple,
+      sections: stage.programStageSections?.map((section, index) => {
         return {
           title: section.displayName,
           sectionId: section.id,
-          stageId: stage.id,
+          stageId: section.programStage?.id,
+          repeatable: section.programStage?.id === stage.id ? stage.repeatable : section.repeatable,
           dataElements: section.dataElements.map((dataElement) => {
             return {
               name: dataElement.displayName,
@@ -100,7 +126,6 @@ export function formatSurgery(program) {
           }),
         };
       }),
-      children: stage.children?.map((child) => formatStage(child)),
     };
   };
 
@@ -166,8 +191,8 @@ export function generateWeeks() {
   return weeksArray;
 }
 
-export const evaluateShowIf = (str, formValues) => {
-  if (!str) return true;
+export const evaluateShowIf = (str, formValues = {}) => {
+  if (!str || !formValues || Object.keys(formValues)?.length === 0) return false;
   const [fieldId, operator, value] = str.split(":");
   const fieldValue = formValues[fieldId]?.toString()?.toLowerCase();
   const valueArray = value?.split(",").map((item) => item?.toLowerCase());
@@ -219,6 +244,20 @@ export const disableMicrobiology = (form, events) => {
   return samplesSentForCultureValues?.length;
 };
 
+const getEndOfDay = () => {
+  return new Date(new Date().setHours(23, 59, 59, 999));
+};
+
+// Function to get start of day
+const getStartOfDay = () => {
+  return new Date(new Date().setHours(0, 0, 0, 0));
+};
+
+// Function to format date
+const formatDate = (date) => {
+  return new Date(format(new Date(date), "yyyy-MM-dd"));
+};
+
 export const evaluateValidations = (validations, fieldType, formValues, dataElements) => {
   if (!validations) return [];
 
@@ -233,11 +272,14 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
     if (fieldType === "DATE") {
       if (fieldId === "today") {
         field.name = fieldId;
-        fieldValue = ["lt", "le", "eq", "gt"].includes(operator)
-          ? new Date(new Date().setHours(23, 59, 59, 999))
-          : new Date(new Date().setHours(0, 0, 0, 0));
+        const operators = ["lt", "le", "eq", "gt"];
+        fieldValue = operators.includes(operator) ? getEndOfDay() : getStartOfDay();
       } else {
-        fieldValue = formValues[fieldId] ? new Date(format(new Date(formValues[fieldId]), "yyyy-MM-dd")) : new Date();
+        if (formValues[fieldId]) {
+          fieldValue = formatDate(formValues[fieldId]);
+        } else {
+          return Promise.resolve();
+        }
       }
     }
 
@@ -285,4 +327,35 @@ export const disableWoundInformation = (section, events, id, eventId) => {
   const symptoms = sectionTitle?.includes("symptoms");
 
   return eventValues?.length === 0 && (infectionInformation || symptoms);
+};
+
+export const debounce = (func, wait) => {
+  let timeout;
+  return function (...args) {
+    const context = this;
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(context, args), wait);
+  };
+};
+
+// function that takes an array of events and returns one object with all the data values (key: value). Data element id is the key and the value is the value.
+export const formatDataValues = (events) => {
+  const dataValues = events?.flatMap((event) => {
+    return event?.dataValues?.map((dataValue) => {
+      return {
+        [dataValue?.dataElement]: dataValue?.value,
+      };
+    });
+  });
+  return Object.assign({}, ...dataValues);
+};
+
+//function that takes an array of attributes and returns one object with all the attribute values (key: value). Attribute id is the key and the value is the value.
+export const formatAttributes = (attributes) => {
+  const attributeValues = attributes?.flatMap((attribute) => {
+    return {
+      [attribute?.id]: attribute?.value,
+    };
+  });
+  return Object.assign({}, ...attributeValues);
 };

@@ -10,8 +10,8 @@ import { createUseStyles } from "react-jss";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import routes from "../routes";
 import UseGetForms from "../hooks/useGetForms";
-import UseGetOrgUnit from "../hooks/useGetOrgUnit";
-import useGetDataElements from "../hooks/useGetDataElements";
+import UseOrgUnit from "../hooks/useOrgUnit";
+import useDataElements from "../hooks/useDataElements";
 import { setUser, setDataElements } from "../redux/actions";
 import { useSelector, useDispatch } from "react-redux";
 
@@ -55,11 +55,19 @@ function getItem(label, key, icon, children, type) {
     type,
   };
 }
+
+const domain = window.location.origin;
 const items = [
   getItem("Dashboard", "/", <HomeIcon />, null, "item"),
   getItem("Surgeries", "/surgeries", <ChartPieIcon />, null, "item"),
-  getItem("Reports", "/reports", <ArrowDownRightIcon />, null, "item"),
-  getItem("Configurations", "/configurations", <Cog6ToothIcon />, null, "item"),
+  getItem(<a href={`${domain}`}>Reports</a>, null, <ArrowDownRightIcon />, null, "item"),
+  getItem(
+    <a href={`${domain}/dhis-web-maintenance/index.html#/list/programSection/program`}>Configurations</a>,
+    null,
+    <Cog6ToothIcon />,
+    null,
+    "item"
+  ),
 ];
 const NavigationLayout = ({ user, program, organisationUnits }) => {
   const classes = styles();
@@ -74,9 +82,9 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
 
   const { getForms } = UseGetForms();
 
-  const { getOrgUnit } = UseGetOrgUnit();
+  const { getOrgUnit } = UseOrgUnit();
 
-  const { getDataElements } = useGetDataElements();
+  const { getDataElements } = useDataElements();
 
   const navigate = useNavigate();
 

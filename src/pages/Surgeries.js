@@ -8,23 +8,23 @@ import { PlusOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
 import moment from "moment";
 import CardItem from "../components/CardItem";
-import { isValidDate, generateWeeks } from "../lib/helpers";
+import { isValidDate, generateWeeks, debounce } from "../lib/helpers";
+import useInstances from "../hooks/useInstances";
 
 const useStyles = createUseStyles({
   search: {
     marginBottom: "2rem",
     display: "flex",
-    // gridTemplateColumns: "1fr 1fr",
     gap: "1rem",
     alignItems: "center",
     "& > div, > span": {
       width: "100% !important",
     },
     "@media (max-width: 768px)": {
-        flexDirection: "column",
-        "& > div, > span": {
-            width: "100% !important",
-        },
+      flexDirection: "column",
+      "& > div, > span": {
+        width: "100% !important",
+      },
     },
   },
   datePicker: {
@@ -43,129 +43,38 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Surgeries({ program }) {
+export default function Surgeries() {
   const [instances, setInstances] = useState(null);
   const [weeks, _] = useState(generateWeeks());
   const styles = useStyles();
   const navigate = useNavigate();
-  const engine = useDataEngine();
-  const { registration } = useSelector((state) => state.forms);
+  // const engine = useDataEngine();
+  const { program } = useSelector((state) => state.forms);
+
+  console.log("PROGRAM : ", program);
+
+  const { getSurgeries } = useInstances();
+
+  const fetchSurgeries = async () => {
+    if (!program) return;
+    const instances = await getSurgeries("", program);
+    setInstances(instances);
+  };
 
   useEffect(() => {
-    getSurgeries();
-  }, []);
+    if (program) fetchSurgeries();
+  }, [program]);
 
-  const getSurgeries = async (query = "") => {
-    let startDate;
-    let endDate;
-    if (query?.includes("..")) {
-      const dates = query?.split("..");
-      startDate = dates[0];
-      endDate = dates[1];
-      query = "";
-    }
-    const dataElementIds = registration?.sections?.flatMap((section) => {
-      return section?.dataElements?.filter((dataElement) => {
-        return dataElement?.name === "Secondary ID" || dataElement?.name === "Patient ID";
-      });
-    });
+  console.log("PROGRAM1 : ", program);
 
-    query = query?.trim();
+  const searchSurgeries = async (query = "") => {
+    const searched = await getSurgeries(query, program);
+    setInstances(searched);
 
-    const options = {
-      events: {
-        resource: `trackedEntityInstances.json`,
-        params: {
-          fields: ["trackedEntityInstance", "trackedEntityType", "attributes[attribute,value]", "enrollments[*]"],
-          order: "created:desc",
-          ouMode: "ALL",
-          program: program?.id,
-          pageSize: 100,
-        },
-      },
-    };
-
-    if (query) {
-      const results = await Promise.all(
-        dataElementIds?.map(async (dataElement) => {
-          const filterQuery = query
-            ? {
-                filter: `${dataElement?.id}:ILIKE:${query}`,
-              }
-            : {};
-          const { events } = await engine.query({
-            ...options,
-            events: {
-              ...options.events,
-              params: {
-                ...options.events.params,
-                ...filterQuery,
-              },
-            },
-          });
-
-          const trackedEntityInstances = events?.trackedEntityInstances;
-
-          const enrollments = trackedEntityInstances?.flatMap((instance) => {
-            return instance?.enrollments?.map((enrollment) => {
-              return {
-                ...enrollment,
-                trackedEntityType: instance?.trackedEntityType,
-                trackedEntityInstance: instance?.trackedEntityInstance,
-              };
-            });
-          });
-          return enrollments?.filter(
-            (enrollment, index, self) =>
-              index === self.findIndex((t) => t.trackedEntityInstance === enrollment.trackedEntityInstance)
-          );
-        })
-      );
-      const enrollments = results?.flatMap((result) => result);
-      setInstances(enrollments);
-      return enrollments;
-    }
-
-    if (startDate && endDate) {
-      const dateOfSurgeryDataElement = registration?.sections?.flatMap((section) => {
-        return section?.dataElements?.filter((dataElement) => {
-          return dataElement?.name?.toLowerCase() === "date of surgery";
-        });
-      })[0];
-
-      options.events.params = {
-        ...options.events.params,
-        filter: `${dateOfSurgeryDataElement?.id}:ge:${startDate}&${dateOfSurgeryDataElement?.id}:le:${endDate}`,
-      };
-    }
-
-    const { events } = await engine.query(options);
-    const trackedEntityInstances = events?.trackedEntityInstances;
-
-    const enrollments = trackedEntityInstances?.flatMap((instance) => {
-      return instance?.enrollments?.map((enrollment) => {
-        return {
-          ...enrollment,
-          trackedEntityType: instance?.trackedEntityType,
-          trackedEntityInstance: instance?.trackedEntityInstance,
-        };
-      });
-    });
-
-    setInstances(enrollments);
-    return enrollments;
+    console.log("SEARCHING SURGERIES : ", query);
   };
 
-  const debounce = (func, wait) => {
-    let timeout;
-    return function (...args) {
-      const context = this;
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(context, args), wait);
-    };
-  };
-
-  const getSurgeriesDebounced = debounce(getSurgeries, 400);
+  const getSurgeriesDebounced = debounce(searchSurgeries, 400);
 
   const renderDate = (text) => {
     return isValidDate(text) ? moment(text).format("DD MMM YYYY") : text;
@@ -265,20 +174,22 @@ export default function Surgeries({ program }) {
       ) : (
         <Table
           columns={columns}
-          dataSource={instances?.flatMap((instance) => {
-            const object = {};
-            instance?.attributes?.forEach((attribute) => {
-              object[attribute?.displayName] = attribute?.value;
-            });
+          dataSource={
+            instances?.flatMap((instance) => {
+              const object = {};
+              instance?.attributes?.forEach((attribute) => {
+                object[attribute?.displayName] = attribute?.value;
+              });
 
-            return {
-              ...object,
-              trackedEntityInstance: instance?.trackedEntityInstance,
-              trackedEntityType: instance?.trackedEntityType,
-              enrollment: instance?.enrollment,
-              status: instance?.status,
-            };
-          })}
+              return {
+                ...object,
+                trackedEntityInstance: instance?.trackedEntityInstance,
+                trackedEntityType: instance?.trackedEntityType,
+                enrollment: instance?.enrollment,
+                status: instance?.status,
+              };
+            }) || []
+          }
           pagination={instances?.length > 10 ? { pageSize: 10, showSizeChanger: false } : false}
           rowKey={(record) => record?.trackedEntityInstance}
           bordered
@@ -293,7 +204,6 @@ export default function Surgeries({ program }) {
               </div>
             ),
           }}
-          scroll={{ x: 700 }}
         />
       )}
     </CardItem>
