@@ -11,7 +11,7 @@ import { formatValues } from "../lib/mapValues";
 import Section from "../components/Section";
 import moment from "moment";
 import { createUseStyles } from "react-jss";
-import { DoubleLeftOutlined, PlusOutlined, EditOutlined } from "@ant-design/icons";
+import { DoubleLeftOutlined, PlusOutlined, EditOutlined, PrinterOutlined, DownloadOutlined } from "@ant-design/icons";
 import { disableMicrobiology, statusColor } from "../lib/helpers";
 import { CircularLoader } from "@dhis2/ui";
 import Overdue from "../components/Overdue";
@@ -69,6 +69,9 @@ const useStyles = createUseStyles({
     padding: "10px 0px",
     borderTop: "1px solid #D4DFE7",
     marginTop: "1rem",
+    "& button": {
+      marginLeft: "1rem",
+    },
   },
 });
 
@@ -79,6 +82,7 @@ export default function SurgeryForm() {
   const [discontinue, setDiscontinue] = useState(false);
   const [open, setOpen] = useState(false);
   const [isMicrobiologyDisabled, setIsMicrobiologyDisabled] = useState(false);
+  const [stagesData, setStagesData] = useState(null);
 
   const { registration, stages } = useSelector((state) => state.forms);
   const user = useSelector((state) => state.user);
@@ -97,10 +101,33 @@ export default function SurgeryForm() {
     ...useEnrollment(),
   };
 
+  const createStagesData = (enrollmentDatas) => {
+    const stagesData = formValues?.stagesValues?.flatMap((stage) => {
+      const events =
+        !stage?.repeatable || (stage?.repeatable && !stage?.multiple)
+          ? stage?.events?.slice(0, 1)
+          : getFullEvents(enrollmentDatas, stage)?.events;
+
+      return events?.map((event) => {
+        return {
+          enrollment,
+          trackedEntityInstance,
+          programStage: event?.programStage,
+          event: stage?.multiple ? event?.event : null,
+          name: stage.title,
+        };
+      });
+    });
+
+    setStagesData(stagesData);
+  };
+
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
+
     setEnrollmentData(data);
 
+    if (!data) return;
     const attributes = data?.attributes?.map((attribute) => ({
       id: attribute.attribute,
       name: attribute?.displayName,
@@ -126,8 +153,14 @@ export default function SurgeryForm() {
       };
     });
 
-    setFormValues({ enrollmentValues, stagesValues });
+    await setFormValues({ enrollmentValues, stagesValues });
   };
+
+  useEffect(() => {
+    if (formValues) {
+      createStagesData(enrollmentData);
+    }
+  }, [formValues]);
 
   useEffect(() => {
     if (trackedEntityInstance && enrollment) {
@@ -181,6 +214,7 @@ export default function SurgeryForm() {
           setIsMicrobiologyDisabled(true);
         }
         const isDisabled = stageForm?.title?.toLowerCase()?.includes("pathogen information") && isMicrobiologyDisabled;
+
         return (
           <Tooltip title={isDisabled ? '"Samples sent for culture?" must be answered "Yes" to enable this section.' : ""}>
             <div style={{ cursor: isDisabled ? "not-allowed" : "pointer" }}>
@@ -277,12 +311,27 @@ export default function SurgeryForm() {
 
       await updateEnrollment(enrollment, updatedEnrollmentData);
       await getEnrollment();
+      setDiscontinue(false);
     }
   };
 
   useEffect(() => {
     checkIfOverdue();
   }, [formValues]);
+
+  const footer = stagesData && (
+    <Button
+      type="primary"
+      onClick={() => {
+        navigate(`/print/enrollment/${enrollment}/tei/${trackedEntityInstance}`, {
+          state: stagesData,
+        });
+      }}
+      icon={<DownloadOutlined />}
+    >
+      Download
+    </Button>
+  );
 
   return (
     <>
@@ -410,20 +459,23 @@ export default function SurgeryForm() {
             })}
             <div className={classes.footer}>
               {enrollmentData?.status === "ACTIVE" && (
-                <Button type="primary" onClick={() => setDiscontinue(true)}>
+                <Button danger onClick={() => setDiscontinue(true)}>
                   Discontinue
                 </Button>
               )}
+              {footer}
             </div>
           </Card>
         </div>
       )}
+
       <Overdue
         overdue={showOverdue}
         setOverdue={setShowOverdue}
         onFinish={handleOverdue}
         setDiscontinue={setDiscontinue}
         discontinue={discontinue}
+        surgeryLink={`/surgery/${trackedEntityInstance}/${enrollment}`}
       />
       <EditSurgeryDetails
         open={open}

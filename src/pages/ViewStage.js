@@ -95,6 +95,8 @@ const ViewStage = () => {
     });
   };
 
+
+
   return (
     <>
       {surgeryLink && (

@@ -6,7 +6,7 @@ import InputItem from "./InputItem";
 import Section from "./Section";
 import { useNavigate } from "react-router-dom";
 
-const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue }) => {
+const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, surgeryLink }) => {
   const { stages } = useSelector((state) => state.forms);
   const outcome = stages?.find((stage) => stage?.title?.toLowerCase()?.includes("outcome"));
   const [form] = Form.useForm();
@@ -14,7 +14,15 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue })
 
   const footer = (
     <div>
-      <Button onClick={() => navigate(-1)}>Back</Button>
+      <Button
+        onClick={() => {
+          navigate(discontinue ? surgeryLink : "/surgeries");
+          setOverdue(false);
+          setDiscontinue(false);
+        }}
+      >
+        Back
+      </Button>
       <Button
         type="primary"
         htmlType="submit"
@@ -37,7 +45,7 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue })
       title={overdue ? "This form is overdue" : "Discontinue surveillance"}
       footer={footer}
     >
-      <Form form={form} layout="vertical" onFinish={(values) => onFinish(values, outcome?.id)}>
+      <Form form={form} layout="vertical" onFinish={(values) => onFinish(values, outcome?.stageId)}>
         {outcome?.sections?.map((section) => (
           <>
             <Section key={section.id} title={section.title} />
