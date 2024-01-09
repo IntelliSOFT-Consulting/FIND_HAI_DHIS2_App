@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Breadcrumb, Divider, Table, Button } from "antd";
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
-import {CloudDownloadOutlined} from "@ant-design/icons";
+import { CloudDownloadOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { DoubleLeftOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
@@ -12,6 +12,8 @@ import UseDataStore from "../hooks/useDataStore";
 import { formatDisplayValue } from "../lib/mapValues";
 import { createUseStyles } from "react-jss";
 import { usePDF } from "react-to-pdf";
+import moment from "moment/moment";
+import { toTitleCase } from "../lib/helpers";
 
 const useStyles = createUseStyles({
   mainSection: {
@@ -20,11 +22,15 @@ const useStyles = createUseStyles({
   divider: {
     color: "#2B6693 !important",
     borderColor: "#2B6693 !important",
+    "& .ant-divider-inner-text": {
+      border: "1px solid #2B6693 !important",
+    }
   },
 });
 
 const Print = () => {
   const [components, setComponents] = useState(null);
+  const [attributes, setAttributes] = useState(null);
   const { stages } = useSelector((state) => state.forms);
   const { getEnrollmentData } = useGetInstances();
   const { getData } = UseDataStore();
@@ -38,8 +44,8 @@ const Print = () => {
   const { toPDF, targetRef } = usePDF({
     filename: "print.pdf",
     canvas: {
-      mimeType: 'image/png',
-      qualityRatio: 1
+      mimeType: "image/png",
+      qualityRatio: 1,
     },
     page: {
       margin: 10,
@@ -55,21 +61,31 @@ const Print = () => {
     }
   }, [state]);
 
-  const parseQueryString = () => {
-    const queryString = location.search.substring(1);
-    const params = queryString.split("&");
-    return params.reduce((paramObject, param) => {
-      const [key, value] = param.split("=");
-      paramObject[key] = value;
-      return paramObject;
-    }, {});
-  };
-
-  const queryParams = parseQueryString();
+  const tableColumns = [
+    {
+      title: "Name",
+      dataIndex: "displayName",
+      key: "displayName",
+      width: "40%",
+    },
+    {
+      title: "Value",
+      dataIndex: "value",
+      key: "value",
+      render: (text, record) => {
+        if (record.valueType === "DATE") {
+          return moment(text).format("YYYY-MM-DD");
+        }
+        return text;
+      },
+      width: "60%",
+    },
+  ];
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
     if (data?.status) {
+      setAttributes(data?.attributes);
       const datas = await Promise.all(
         state.map(async (item) => {
           const stageForm = stages?.find((stageItem) => stageItem.stageId === item.programStage);
@@ -85,7 +101,7 @@ const Print = () => {
                   <React.Fragment key={index}>
                     {column?.name?.trim() && column?.data?.length > 0 && (
                       <Divider orientation="left" className={classes.divider}>
-                        {column?.name}
+                        {toTitleCase(column?.name)}
                       </Divider>
                     )}
                     {column?.data?.length > 0 && (
@@ -180,17 +196,28 @@ const Print = () => {
       )}
       <CardItem
         title={
-          <Button onClick={() => toPDF()}
-            icon={<CloudDownloadOutlined />}
-          >
+          <Button onClick={() => toPDF()} icon={<CloudDownloadOutlined />}>
             Download PDF
           </Button>
         }
       >
-        {!components ? (
+        {!components || !attributes ? (
           <CircularLoader />
         ) : (
           <div ref={targetRef}>
+            <div className={classes.mainSection}>
+              <Section title="SURGERY SUMMARY" primary={true} />
+            </div>
+            <Table
+              columns={tableColumns}
+              dataSource={attributes || []}
+              pagination={false}
+              rowKey={(record) => record.displayName}
+              size="small"
+              showHeader={false}
+              bordered
+              className={classes.mainSection}
+            />
             {components?.map((component, index) => (
               <React.Fragment key={index}>{component}</React.Fragment>
             ))}

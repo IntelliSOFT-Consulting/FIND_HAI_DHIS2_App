@@ -258,7 +258,8 @@ export default function SurgeryForm() {
     const events = await createStageEvents(stageIds, []);
     if (events) {
       // remove first event and remain with the rest
-      const newMappings = events.slice(1).map((event) => {
+      const eventsMapped = stage.multiple ? events : events.slice(1);
+      const newMappings = eventsMapped.map((event) => {
         return {
           parentEvent: events[0],
           event,

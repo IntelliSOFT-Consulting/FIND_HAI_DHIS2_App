@@ -350,7 +350,6 @@ export const formatDataValues = (events) => {
   return Object.assign({}, ...dataValues);
 };
 
-//function that takes an array of attributes and returns one object with all the attribute values (key: value). Attribute id is the key and the value is the value.
 export const formatAttributes = (attributes) => {
   const attributeValues = attributes?.flatMap((attribute) => {
     return {
@@ -359,3 +358,9 @@ export const formatAttributes = (attributes) => {
   });
   return Object.assign({}, ...attributeValues);
 };
+
+export const toTitleCase = (str) =>
+  str
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");

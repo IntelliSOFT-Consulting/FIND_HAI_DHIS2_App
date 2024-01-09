@@ -9,6 +9,14 @@ import useEnrollment from "../hooks/useEnrollment";
 import InputItem from "./InputItem";
 import useEvents from "../hooks/useEvents";
 import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues } from "../lib/helpers";
+import {
+  getSectionMappings,
+  getSectionEvents,
+  getNonRepeatingEvents,
+  getRepeatingEvents,
+  getUpdatedEvents,
+  getRepeatingValues,
+} from "../lib/stageHelpers";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 import weekday from "dayjs/plugin/weekday";
@@ -150,41 +158,13 @@ export default function Stage({
       const nonRepeatingStages = stageForm.sections.filter((section) => !section.repeatable || section.stageId === "IbB9QEgQU6D");
       const repeatingStages = stageForm.sections.filter((section) => section.repeatable);
 
-      const nonRepeatingEvents = enrollmentData?.events?.filter((event) =>
-        nonRepeatingStages.some((stage) => stage.stageId === event.programStage)
-      );
+      const sectionMappings = getSectionMappings(mappings, eventId);
+      const sectionEvents = getSectionEvents(enrollmentData, sectionMappings, eventId);
+      const nonRepeatingEvents = getNonRepeatingEvents(sectionEvents, nonRepeatingStages);
+      const repeatingEvents = getRepeatingEvents(sectionEvents, repeatingStages);
+      const updatedEvents = getUpdatedEvents(nonRepeatingEvents, nonRepeatingStages, values);
+      const repeatingValues = getRepeatingValues(values);
 
-      const repeatingEvents = enrollmentData?.events?.filter((event) =>
-        repeatingStages.some((stage) => stage.stageId === event.programStage)
-      );
-
-      const updatedEvents = nonRepeatingEvents.map((event) => {
-        const datas = {};
-        for (const dataElement of nonRepeatingStages
-          .filter((stage) => stage.stageId === event.programStage)
-          .flatMap((item) => item.dataElements)) {
-          datas[dataElement.id] = values[dataElement.id];
-        }
-        return {
-          ...event,
-          dataValues: Object.keys(datas).map((key) => ({
-            dataElement: key,
-            value: datas[key],
-          })),
-        };
-      });
-
-      const repeatingValues = Object.keys(values).reduce((acc, curr) => {
-        if (Array.isArray(values[curr])) {
-          return {
-            ...acc,
-            [curr]: values[curr],
-          };
-        }
-        return acc;
-      }, {});
-
-      // the keys of repeatingValues are the programStageIds. for each repeating value in the array check against the events of the same index. if the event exists, update the event. if the event does not exist, create a new event, if the events are more than the repeating values, delete the extra events.
       const updatedRepeatingEvents = await Promise.all(
         Object.keys(repeatingValues).flatMap(async (programStageId) => {
           const stageEvents = repeatingEvents.filter((event) => event.programStage === programStageId);
@@ -249,13 +229,11 @@ export default function Stage({
       }
     } catch (errorInfo) {
       setError(errorInfo);
-      return;
     }
   };
 
   const showSection = (section, formValues) => {
     const formValuesObject = formValues ? formValues : dataValues;
-    console.log(formValuesObject);
     if (!formValuesObject) {
       return true;
     }
@@ -269,12 +247,10 @@ export default function Stage({
     }
 
     if (section.title === "Symptoms" || section.sectionId === "blNc7ePFTPu") {
-      console.log("SECTION", section);
       return formValuesObject["kKbAdaCCCM7"] === "true" || formValuesObject["kKbAdaCCCM7"] === true;
     }
 
     if (section.title === "Symptoms" || section.sectionId === "blNc7ePFTPu" || section.title === "INFECTION INFORMATION") {
-      console.log("SECTION", section);
       return formValuesObject["fkxHVloTLwR"] === "true" || formValuesObject["fkxHVloTLwR"] === true;
     }
 
