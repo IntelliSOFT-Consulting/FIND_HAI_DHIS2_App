@@ -267,6 +267,12 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
     const [operator, fieldId] = validation.split(":");
     let fieldValue = formValues[fieldId]?.toString()?.toLowerCase() || "";
 
+    if (fieldId !== "today" && !fieldValue) {
+      return {
+        validator: (rule, value) => Promise.resolve(),
+      };
+    }
+
     const field = dataElements.find((dataElement) => dataElement?.id === fieldId) || {};
 
     if (fieldType === "DATE") {
@@ -306,7 +312,7 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
     };
 
     return {
-      validator: (rule, value) => operators[operator]?.(value) || operators.default(),
+      validator: (rule, value) => (!value ? Promise.resolve() : operators[operator]?.(value) || operators.default()),
     };
   });
 };

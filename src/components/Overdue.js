@@ -5,13 +5,13 @@ import { Button, Form } from "antd";
 import InputItem from "./InputItem";
 import Section from "./Section";
 import { useNavigate } from "react-router-dom";
+import dayjs from "dayjs";
 
 const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, surgeryLink }) => {
   const { stages } = useSelector((state) => state.forms);
   const outcome = stages?.find((stage) => stage?.title?.toLowerCase()?.includes("outcome"));
   const [form] = Form.useForm();
   const navigate = useNavigate();
-
 
   const footer = (
     <div>
@@ -70,6 +70,13 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
                   }))}
                   placeholder={`Enter ${dataElement.name}`}
                   name={dataElement.id}
+                  {...(dataElement.disablefuturedate
+                    ? {
+                        disabledDate: (current) => {
+                          return current && current > dayjs().endOf("day");
+                        },
+                      }
+                    : {})}
                 />
               </Form.Item>
             ))}
