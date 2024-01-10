@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createUseStyles } from "react-jss";
-import { useDataEngine } from "@dhis2/app-runtime";
-import { Input, Button, Space, Tag, Table, DatePicker, Select } from "antd";
+import { Button, DatePicker, Input, Select, Space, Table, Tag } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
 import moment from "moment";
 import CardItem from "../components/CardItem";
-import { isValidDate, generateWeeks, debounce } from "../lib/helpers";
+import { debounce, generateWeeks, isValidDate } from "../lib/helpers";
 import useInstances from "../hooks/useInstances";
 
 const useStyles = createUseStyles({
@@ -48,10 +47,7 @@ export default function Surgeries() {
   const [weeks, _] = useState(generateWeeks());
   const styles = useStyles();
   const navigate = useNavigate();
-  // const engine = useDataEngine();
   const { program } = useSelector((state) => state.forms);
-
-  console.log("PROGRAM : ", program);
 
   const { getSurgeries } = useInstances();
 
@@ -65,13 +61,9 @@ export default function Surgeries() {
     if (program) fetchSurgeries();
   }, [program]);
 
-  console.log("PROGRAM1 : ", program);
-
   const searchSurgeries = async (query = "") => {
     const searched = await getSurgeries(query, program);
     setInstances(searched);
-
-    console.log("SEARCHING SURGERIES : ", query);
   };
 
   const getSurgeriesDebounced = debounce(searchSurgeries, 400);

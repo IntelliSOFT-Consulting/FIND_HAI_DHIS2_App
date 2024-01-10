@@ -133,7 +133,6 @@ export default function UseEvents() {
       });
       return response?.importSummaries?.map((summary) => summary?.reference);
     } catch (error) {
-      console.log("ERROR", error);
       return error?.details?.response?.importSummaries[0]?.description;
     }
   };

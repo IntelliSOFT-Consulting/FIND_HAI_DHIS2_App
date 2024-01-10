@@ -62,14 +62,18 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
               {section?.dataElements?.map((dataElement) => {
                 const shouldShow =
                   !dataElement?.showif || evaluateShowIf(dataElement?.showif, formValues?.[section?.stageId]?.[index]);
-                if (field.key > 0 && section.title === "Antimicrobial Susceptibility Testing") {
+                if (field.key > 0 && (section.title === "Antimicrobial Susceptibility Testing" || section.title === "SPECIMEN TYPE")) {
                   if (formValues && formValues?.[section?.stageId] && !formValues?.[section?.stageId]?.[index]) {
                     const prevValues = { ...formValues?.[section?.stageId]?.[0] };
 
                     const antibioticId = dataElements?.find((dataElement) => dataElement?.name === "Antibiotic")?.id;
                     const astResultId = dataElements?.find((dataElement) => dataElement?.name === "AST result")?.id;
+                    const cultureFindingsId = dataElements?.find((dataElement) => dataElement?.name === "Culture findings")?.id;
+                    const cultureDateId = dataElements?.find((dataElement) => dataElement?.name === "Date of culture findings")?.id;
                     delete prevValues[antibioticId];
                     delete prevValues[astResultId];
+                    delete prevValues[cultureFindingsId];
+                    delete prevValues[cultureDateId];
 
                     form.setFieldValue([section?.stageId, index], prevValues);
                   }
