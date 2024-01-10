@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button, Popconfirm } from "antd";
 import InputItem from "./InputItem";
 import { createUseStyles } from "react-jss";
@@ -41,6 +41,7 @@ const useStyles = createUseStyles({
 
 export default function RepeatForm({ Form, form, section, formValues, eventsData }) {
   const classes = useStyles();
+  const [sampleIdValue, setSampleIdValue] = useState(null);
 
   const attributes = useSelector((state) => state.attributes);
   const dataElements = useSelector((state) => state.dataElements);
@@ -114,6 +115,12 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
                         }))}
                         placeholder={`Enter ${dataElement.name}`}
                         name={dataElement.id}
+                        onChange={(e) => {
+                          if (dataElement?.name === "Sample ID") {
+                            setSampleIdValue(e.target.value);
+                          }
+                        }}
+                        {...(sampleIdValue && dataElement?.name === "Sample ID" ? { defaultValue: sampleIdValue } : {})}
                         {...(dataElement.disablefuturedate
                           ? {
                               disabledDate: (current) => {
@@ -140,12 +147,11 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
               )}
             </div>
           ))}
-
           <Form.Item className={classes.submit}>
             <Button
               type="dashed"
               onClick={async () => {
-                add();
+                await add();
               }}
               block
               icon={<PlusOutlined />}

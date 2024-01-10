@@ -206,7 +206,7 @@ export default function Stage({
         })
       );
 
-      const payload = [...updatedEvents, ...updatedRepeatingEvents].flat();
+      const payload = [...updatedEvents, ...updatedRepeatingEvents].flat()?.map((item) => ({ ...item, status: "COMPLETED" }));
 
       const response = await createEvents(payload);
 
