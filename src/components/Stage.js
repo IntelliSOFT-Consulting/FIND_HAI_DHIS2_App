@@ -246,10 +246,6 @@ export default function Stage({
       return !noGrowth;
     }
 
-    if (section.title === "Symptoms" || section.sectionId === "blNc7ePFTPu") {
-      return formValuesObject["kKbAdaCCCM7"] === "true" || formValuesObject["kKbAdaCCCM7"] === true;
-    }
-
     if (section.title === "Symptoms" || section.sectionId === "blNc7ePFTPu" || section.title === "INFECTION INFORMATION") {
       return formValuesObject["fkxHVloTLwR"] === "true" || formValuesObject["fkxHVloTLwR"] === true;
     }
