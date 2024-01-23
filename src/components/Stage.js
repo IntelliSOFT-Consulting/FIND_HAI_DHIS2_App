@@ -319,7 +319,7 @@ export default function Stage({
                         },
                         ...evaluateValidations(
                           dataElement.validator,
-                          dataElement.valueType,
+                          dataElement,
                           {
                             ...formatAttributes(attributes),
                             ...formatDataValues(stageEvents),

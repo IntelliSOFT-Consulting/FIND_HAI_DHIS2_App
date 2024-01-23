@@ -104,7 +104,7 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
                         },
                         ...evaluateValidations(
                           dataElement.validator,
-                          dataElement.valueType,
+                          dataElement,
                           { ...formValues, ...formValues?.[section?.stageId]?.[index], ...attributeValues },
                           dataElements
                         ),

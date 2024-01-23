@@ -217,7 +217,7 @@ export default function Register() {
                     required: dataElement.required,
                     message: `Please input ${dataElement.name}!`,
                   },
-                  ...evaluateValidations(dataElement.validator, dataElement.valueType, formValues, section?.dataElements),
+                  ...evaluateValidations(dataElement.validator, dataElement, formValues, section?.dataElements),
                 ];
                 const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
                 return shouldShow ? (

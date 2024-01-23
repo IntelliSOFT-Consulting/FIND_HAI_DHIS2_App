@@ -124,7 +124,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                       required: dataElement?.required,
                       message: `Please input ${dataElement?.name}!`,
                     },
-                    ...evaluateValidations(dataElement?.validator, dataElement.valueType, formValues, dataElements),
+                    ...evaluateValidations(dataElement?.validator, dataElement, formValues, dataElements),
                   ]}
                   disabled={dataElement?.disabled}
                   hidden={!shouldShow}

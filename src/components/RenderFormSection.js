@@ -123,7 +123,7 @@ const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
                 },
                 ...evaluateValidations(
                   dataElement.validator,
-                  dataElement.valueType,
+                  dataElement,
                   { ...eventsData, ...attributeValues },
                   dataElements
                 ),

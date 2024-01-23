@@ -258,7 +258,7 @@ const formatDate = (date) => {
   return new Date(format(new Date(date), "yyyy-MM-dd"));
 };
 
-export const evaluateValidations = (validations, fieldType, formValues, dataElements) => {
+export const evaluateValidations = (validations, currentField, formValues, dataElements) => {
   if (!validations) return [];
 
   const createPromise = (bool, message) => new Promise((resolve, reject) => (bool ? resolve() : reject(message)));
@@ -275,7 +275,7 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
 
     const field = dataElements.find((dataElement) => dataElement?.id === fieldId) || {};
 
-    if (fieldType === "DATE") {
+    if (currentField.valueType === "DATE") {
       if (fieldId === "today") {
         field.name = fieldId;
         const operators = ["lt", "le", "eq", "gt"];
@@ -290,7 +290,7 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
     }
 
     const formatDateValue = (value) => {
-      if (operator === "eq" && fieldType === "DATE") {
+      if (operator === "eq" && currentField.valueType === "DATE") {
         return value ? format(new Date(value), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd");
       }
       return value;
@@ -298,16 +298,19 @@ export const evaluateValidations = (validations, fieldType, formValues, dataElem
 
     const operators = {
       eq: (value) =>
-        createPromise(formatDateValue(fieldValue) === formatDateValue(value), `Value should be equal to ${field?.name}`),
-      ne: (value) => createPromise(fieldValue !== value, `Value should not be equal to ${field?.name}`),
-      gt: (value) => createPromise(value > fieldValue, `Value should be greater than ${field?.name}`),
-      ge: (value) => createPromise(value >= fieldValue, `Value should be greater than or equal to ${field?.name}`),
-      lt: (value) => createPromise(value < fieldValue, `Value should be less than ${field?.name}`),
-      le: (value) => createPromise(value <= fieldValue, `Value should be less than or equal to ${field?.name}`),
-      like: (value) => createPromise(fieldValue?.includes(value), `Value should contain ${fieldValue}`),
-      notin: (value) => createPromise(!fieldValue?.includes(value), `Value should not be in ${fieldValue}`),
-      null: (value) => createPromise(!value, `${field?.name} should be null`),
-      notnull: (value) => createPromise(value, `${field?.name} should not be null`),
+        createPromise(
+          formatDateValue(fieldValue) === formatDateValue(value),
+          `${currentField?.name} must be equal to ${field?.name}`
+        ),
+      ne: (value) => createPromise(fieldValue !== value, `${currentField?.name} must not be on ${field?.name}`),
+      gt: (value) => createPromise(value > fieldValue, `${currentField?.name} must be after ${field?.name}`),
+      ge: (value) => createPromise(value >= fieldValue, `${currentField?.name} must be on or after ${field?.name}`),
+      lt: (value) => createPromise(value < fieldValue, `${currentField?.name} must be before ${field?.name}`),
+      le: (value) => createPromise(value <= fieldValue, `${currentField?.name} must be on or before ${field?.name}`),
+      like: (value) => createPromise(fieldValue?.includes(value), `${currentField?.name} must contain ${fieldValue}`),
+      notin: (value) => createPromise(!fieldValue?.includes(value), `${currentField?.name} must not contain ${fieldValue}`),
+      null: (value) => createPromise(!value, `${field?.name} must be null`),
+      notnull: (value) => createPromise(value, `${field?.name} must not be null`),
       default: () => createPromise(false, "Invalid operator"),
     };
 

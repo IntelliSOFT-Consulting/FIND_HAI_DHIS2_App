@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Badge, Breadcrumb, Tooltip, Card } from "antd";
+import { Table, Button, Badge, Breadcrumb, Tooltip, Card, List, Typography } from "antd";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { setAttributes } from "../redux/actions";
@@ -34,6 +34,13 @@ const useStyles = createUseStyles({
     },
     ".ant-card-body": {
       padding: "10px !important",
+    },
+    ".ant-list-header": {
+      backgroundColor: "#0067B9 !important",
+      color: "white !important",
+      "& strong": {
+        color: "white !important",
+      },
     },
   },
   header: {
@@ -167,27 +174,6 @@ export default function SurgeryForm() {
       getEnrollment();
     }
   }, [registration]);
-
-  const columns = [
-    {
-      title: "Name",
-      dataIndex: "name",
-      key: "name",
-      width: "40%",
-    },
-    {
-      title: "Value",
-      dataIndex: "value",
-      key: "value",
-      render: (text, record) => {
-        if (record.valueType === "DATE") {
-          return moment(text).format("YYYY-MM-DD");
-        }
-        return text;
-      },
-      width: "60%",
-    },
-  ];
 
   const stageColumns = [
     {
@@ -358,115 +344,114 @@ export default function SurgeryForm() {
             }
             color={statusColor(enrollmentData?.status)}
           >
-            <Section title="SURGERY SUMMARY" primary />
-          </Badge.Ribbon>
-          <Card>
-            {formValues?.enrollmentValues?.map((section, index) => (
-              <>
-                <Section title={section.title?.replace("SURGERY SUMMARY", "")} key={index} padded />
-                <Table
-                  columns={columns}
-                  dataSource={section.dataElements}
-                  pagination={false}
-                  rowKey={(record) => record.id}
-                  size="small"
-                  showHeader={false}
-                  bordered
-                  footer={
-                    index === formValues?.enrollmentValues?.length - 1
-                      ? () => (
-                          <div className={classes.edit}>
-                            {enrollmentData?.status === "ACTIVE" && (
-                              <Button type="link" onClick={() => setOpen(true)} icon={<EditOutlined />}>
-                                Edit Surgery Details
-                              </Button>
+            <Card>
+              <List
+                header={
+                  <div className={`${classes.header} ${classes.editButton}`}>
+                    <Typography.Text strong>SURGERY SUMMARY</Typography.Text>
+                    <div className={classes.edit}>
+                      {enrollmentData?.status === "ACTIVE" && (
+                        <Button onClick={() => setOpen(true)} icon={<EditOutlined />}>
+                          Edit Surgery Details
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                }
+                bordered
+                dataSource={formValues?.enrollmentValues?.flatMap((section) => section.dataElements)}
+                renderItem={(item) => (
+                  <List.Item>
+                    <Typography.Text style={{ marginRight: "1rem" }} strong>
+                      {item.name}:
+                    </Typography.Text>{" "}
+                    <Typography.Text>
+                      {item.valueType === "DATE" ? moment(item.value).format("YYYY-MM-DD") : item.value}
+                    </Typography.Text>
+                  </List.Item>
+                )}
+              />
+
+              {formValues?.stagesValues?.map((stage, index) => {
+                const isDisabled = stage?.title?.toLowerCase()?.includes("pathogen information") && isMicrobiologyDisabled;
+                return (
+                  <div className={classes.section} key={index}>
+                    <Section
+                      title={
+                        <Tooltip
+                          title={isDisabled ? '"Samples sent for culture?" must be answered "Yes" to enable this section.' : ""}
+                        >
+                          <div className={classes.header}>
+                            {stage.title}
+                            {checkIfEventEmpty(stage?.events) && enrollmentData?.status === "ACTIVE" && (
+                              <div>
+                                <Button
+                                  style={{
+                                    cursor: isDisabled ? "not-allowed" : "pointer",
+                                    opacity: isDisabled ? 0.7 : 1,
+                                  }}
+                                  disabled={isDisabled}
+                                  onClick={() => addEvent(stage)}
+                                  type="primary"
+                                >
+                                  Add
+                                </Button>
+                              </div>
                             )}
                           </div>
-                        )
-                      : false
-                  }
-                />
-              </>
-            ))}
-            {formValues?.stagesValues?.map((stage, index) => {
-              const isDisabled = stage?.title?.toLowerCase()?.includes("pathogen information") && isMicrobiologyDisabled;
-              return (
-                <div className={classes.section} key={index}>
-                  <Section
-                    title={
-                      <Tooltip
-                        title={isDisabled ? '"Samples sent for culture?" must be answered "Yes" to enable this section.' : ""}
-                      >
-                        <div className={classes.header}>
-                          {stage.title}
-                          {checkIfEventEmpty(stage?.events) && enrollmentData?.status === "ACTIVE" && (
-                            <div>
-                              <Button
-                                style={{
-                                  cursor: isDisabled ? "not-allowed" : "pointer",
-                                  opacity: isDisabled ? 0.7 : 1,
-                                }}
-                                disabled={isDisabled}
-                                onClick={() => addEvent(stage)}
-                                type="primary"
-                              >
-                                Add
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </Tooltip>
-                    }
-                  />
+                        </Tooltip>
+                      }
+                    />
 
-                  {!stage?.repeatable || (stage?.repeatable && !stage?.multiple)
-                    ? stage?.events?.slice(0, 1)?.map((event, i) => (
-                        <div className={classes.event} key={i}>
-                          <Table
-                            columns={stageColumns}
-                            dataSource={[event]}
-                            pagination={false}
-                            rowKey={(record) => record.id}
-                            size="small"
-                            bordered
-                          />
-                        </div>
-                      ))
-                    : getFullEvents(enrollmentData, stage)?.events?.map(
-                        (event, i) =>
-                          event?.dataValues && (
-                            <div className={classes.event} key={i}>
-                              <Table
-                                columns={stageColumns}
-                                dataSource={[event]}
-                                pagination={false}
-                                rowKey={(record) => record.id}
-                                size="small"
-                                bordered
-                              />
-                            </div>
-                          )
-                      )}
+                    {!stage?.repeatable || (stage?.repeatable && !stage?.multiple)
+                      ? stage?.events?.slice(0, 1)?.map((event, i) => (
+                          <div className={classes.event} key={i}>
+                            <Table
+                              columns={stageColumns}
+                              dataSource={[event]}
+                              pagination={false}
+                              rowKey={(record) => record.id}
+                              size="small"
+                              bordered
+                            />
+                          </div>
+                        ))
+                      : getFullEvents(enrollmentData, stage)?.events?.map(
+                          (event, i) =>
+                            event?.dataValues && (
+                              <div className={classes.event} key={i}>
+                                <Table
+                                  columns={stageColumns}
+                                  dataSource={[event]}
+                                  pagination={false}
+                                  rowKey={(record) => record.id}
+                                  size="small"
+                                  bordered
+                                />
+                              </div>
+                            )
+                        )}
 
-                  {stage?.multiple && getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
-                    <div className={classes.newEvent}>
-                      <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
-                        Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-            <div className={classes.footer}>
-              {enrollmentData?.status === "ACTIVE" && (
-                <Button danger onClick={() => setDiscontinue(true)}>
-                  Discontinue
-                </Button>
-              )}
-              {footer}
-            </div>
-          </Card>
+                    {stage?.multiple && getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
+                      <div className={classes.newEvent}>
+                        <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
+                          Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <div className={classes.footer}>
+                {enrollmentData?.status === "ACTIVE" && (
+                  <Button danger onClick={() => setDiscontinue(true)}>
+                    Discontinue
+                  </Button>
+                )}
+                {footer}
+              </div>
+            </Card>
+          </Badge.Ribbon>
         </div>
       )}
 
