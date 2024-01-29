@@ -204,6 +204,12 @@ export default function Register() {
       });
     }
   };
+
+  const allDataElements =
+    registration?.sections?.flatMap((section) => {
+      return section?.dataElements;
+    }) || [];
+
   return (
     <CardItem title="REGISTER NEW PATIENT SURGERY">
       <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
@@ -217,7 +223,7 @@ export default function Register() {
                     required: dataElement.required,
                     message: `Please input ${dataElement.name}!`,
                   },
-                  ...evaluateValidations(dataElement.validator, dataElement, formValues, section?.dataElements),
+                  ...evaluateValidations(dataElement.validator, dataElement, formValues, allDataElements),
                 ];
                 const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
                 return shouldShow ? (

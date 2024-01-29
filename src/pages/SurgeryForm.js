@@ -80,6 +80,10 @@ const useStyles = createUseStyles({
       marginLeft: "1rem",
     },
   },
+  summary: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+  },
 });
 
 export default function SurgeryForm() {
@@ -362,12 +366,14 @@ export default function SurgeryForm() {
                 dataSource={formValues?.enrollmentValues?.flatMap((section) => section.dataElements)}
                 renderItem={(item) => (
                   <List.Item>
-                    <Typography.Text style={{ marginRight: "1rem" }} strong>
-                      {item.name}:
-                    </Typography.Text>{" "}
-                    <Typography.Text>
-                      {item.valueType === "DATE" ? moment(item.value).format("YYYY-MM-DD") : item.value}
-                    </Typography.Text>
+                    <div className={classes.summary}>
+                      <Typography.Text style={{ marginRight: "1rem", minWidth: "12rem" }} strong>
+                        {item.name}:
+                      </Typography.Text>{" "}
+                      <Typography.Text>
+                        {item.valueType === "DATE" ? moment(item.value).format("YYYY-MM-DD") : item.value}
+                      </Typography.Text>
+                    </div>
                   </List.Item>
                 )}
               />
