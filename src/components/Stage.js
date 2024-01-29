@@ -90,6 +90,7 @@ export default function Stage({
 }) {
   const [formValues, setFormValues] = useState(null);
   const [error, setError] = useState(null);
+  const [preFilled, setPreFilled] = useState({});
 
   const [form] = Form.useForm();
   const classes = useStyles();
@@ -210,6 +211,8 @@ export default function Stage({
 
       const response = await createEvents(payload);
 
+      setPreFilled({});
+
       if (response) {
         if (eventId) {
           const newMappings = response?.map((mapping) => {
@@ -291,6 +294,8 @@ export default function Stage({
                 formValues={formValues || dataValues}
                 setDataValues={setDataValues}
                 eventsData={eventsData}
+                preFilled={preFilled}
+                setPreFilled={setPreFilled}
               />
             </>
           );

@@ -6,8 +6,8 @@ import { PlusOutlined, MinusCircleOutlined, MinusCircleTwoTone } from "@ant-desi
 import { useSelector } from "react-redux";
 import { evaluateShowIf, evaluateValidations } from "../lib/helpers";
 import dayjs from "dayjs";
-import weekday from "dayjs/plugin/weekday";
 import localeData from "dayjs/plugin/localeData";
+import weekday from "dayjs/plugin/weekday";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -39,9 +39,8 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function RepeatForm({ Form, form, section, formValues, eventsData }) {
+export default function RepeatForm({ Form, form, section, formValues, preFilled, setPreFilled }) {
   const classes = useStyles();
-  const [sampleIdValue, setSampleIdValue] = useState(null);
 
   const attributes = useSelector((state) => state.attributes);
   const dataElements = useSelector((state) => state.dataElements);
@@ -62,20 +61,40 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
               {section?.dataElements?.map((dataElement) => {
                 const shouldShow =
                   !dataElement?.showif || evaluateShowIf(dataElement?.showif, formValues?.[section?.stageId]?.[index]);
-                if (field.key > 0 && (section.title === "Antimicrobial Susceptibility Testing" || section.title === "SPECIMEN TYPE")) {
+                if (
+                  field.key > 0 &&
+                  (section.title === "Antimicrobial Susceptibility Testing" || section.title === "SPECIMEN TYPE")
+                ) {
                   if (formValues && formValues?.[section?.stageId] && !formValues?.[section?.stageId]?.[index]) {
                     const prevValues = { ...formValues?.[section?.stageId]?.[0] };
 
                     const antibioticId = dataElements?.find((dataElement) => dataElement?.name === "Antibiotic")?.id;
                     const astResultId = dataElements?.find((dataElement) => dataElement?.name === "AST result")?.id;
                     const cultureFindingsId = dataElements?.find((dataElement) => dataElement?.name === "Culture findings")?.id;
-                    const cultureDateId = dataElements?.find((dataElement) => dataElement?.name === "Date of culture findings")?.id;
+                    const cultureDateId = dataElements?.find(
+                      (dataElement) => dataElement?.name === "Date of culture findings"
+                    )?.id;
                     delete prevValues[antibioticId];
                     delete prevValues[astResultId];
                     delete prevValues[cultureFindingsId];
                     delete prevValues[cultureDateId];
 
                     form.setFieldValue([section?.stageId, index], prevValues);
+                  }
+                }
+
+                if (
+                  (dataElement?.name === "Sample ID" || dataElement?.name?.includes("Date of")) &&
+                  !formValues?.[section?.stageId]?.[index]?.[dataElement?.id]
+                ) {
+                  if (preFilled["Sample ID"] && dataElement?.name === "Sample ID") {
+                    form.setFieldValue([section?.stageId, index, dataElement?.id], preFilled["Sample ID"]);
+                  }
+                  if (preFilled["Date of sample collection"] && dataElement?.name?.includes("Date of")) {
+                    form.setFieldValue(
+                      [section?.stageId, index, dataElement?.id],
+                      dayjs(new Date(preFilled["Date of sample collection"]))
+                    );
                   }
                 }
                 return (
@@ -119,12 +138,13 @@ export default function RepeatForm({ Form, form, section, formValues, eventsData
                         }))}
                         placeholder={`Enter ${dataElement.name}`}
                         name={dataElement.id}
-                        onChange={(e) => {
-                          if (dataElement?.name === "Sample ID") {
-                            setSampleIdValue(e.target.value);
+                        onBlur={(e) => {
+                          if (dataElement?.name === "Sample ID" || dataElement?.name === "Date of sample collection") {
+                            if (e?.target?.value && !preFilled[dataElement?.name]) {
+                              setPreFilled({ ...preFilled, [dataElement?.name]: e?.target?.value });
+                            }
                           }
                         }}
-                        {...(sampleIdValue && dataElement?.name === "Sample ID" ? { defaultValue: sampleIdValue } : {})}
                         {...(dataElement.disablefuturedate
                           ? {
                               disabledDate: (current) => {
