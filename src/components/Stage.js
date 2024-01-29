@@ -9,6 +9,7 @@ import useEnrollment from "../hooks/useEnrollment";
 import InputItem from "./InputItem";
 import useEvents from "../hooks/useEvents";
 import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues } from "../lib/helpers";
+
 import {
   getSectionMappings,
   getSectionEvents,
@@ -21,6 +22,7 @@ import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 import weekday from "dayjs/plugin/weekday";
 import localeData from "dayjs/plugin/localeData";
+import UseInstances from "../hooks/useInstances";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -96,6 +98,8 @@ export default function Stage({
   const classes = useStyles();
 
   const navigate = useNavigate();
+
+  const { getEnrollmentData } = UseInstances();
 
   const attributes = useSelector((state) => state.attributes);
   const dataElements = useSelector((state) => state.dataElements);
@@ -226,7 +230,8 @@ export default function Stage({
 
         if (stageForm?.title?.toLowerCase() === "outcome") {
           await getEnrollment();
-          await updateEnrollment(enrollmentData?.enrollment, { ...enrollmentData, status: "COMPLETED" });
+          const enrollment = await getEnrollmentData();
+          await updateEnrollment(enrollmentData?.enrollment, { ...enrollment, status: "COMPLETED" });
         }
         navigate(surgeryLink);
       }
