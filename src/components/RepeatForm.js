@@ -74,10 +74,19 @@ export default function RepeatForm({ Form, form, section, formValues, preFilled,
                     const cultureDateId = dataElements?.find(
                       (dataElement) => dataElement?.name === "Date of culture findings"
                     )?.id;
+                    const dateOfSampleReceptionId = dataElements?.find(
+                      (dataElement) => dataElement?.name === "Date of sample reception in the laboratory"
+                    )?.id;
+                    const dateOfSampleProcessingId = dataElements?.find(
+                      (dataElement) => dataElement?.name === "Date of sample processing in the laboratory"
+                    )?.id;
+
                     delete prevValues[antibioticId];
                     delete prevValues[astResultId];
                     delete prevValues[cultureFindingsId];
                     delete prevValues[cultureDateId];
+                    delete prevValues[dateOfSampleReceptionId];
+                    delete prevValues[dateOfSampleProcessingId];
 
                     form.setFieldValue([section?.stageId, index], prevValues);
                   }
@@ -90,12 +99,12 @@ export default function RepeatForm({ Form, form, section, formValues, preFilled,
                   if (preFilled["Sample ID"] && dataElement?.name === "Sample ID") {
                     form.setFieldValue([section?.stageId, index, dataElement?.id], preFilled["Sample ID"]);
                   }
-                  if (preFilled["Date of sample collection"] && dataElement?.name?.includes("Date of")) {
-                    form.setFieldValue(
-                      [section?.stageId, index, dataElement?.id],
-                      dayjs(new Date(preFilled["Date of sample collection"]))
-                    );
-                  }
+                  // if (preFilled["Date of sample collection"] && dataElement?.name?.includes("Date of")) {
+                  //   form.setFieldValue(
+                  //     [section?.stageId, index, dataElement?.id],
+                  //     dayjs(new Date(preFilled["Date of sample collection"]))
+                  //   );
+                  // }
                 }
                 return (
                   shouldShow && (
