@@ -11,9 +11,9 @@ import useGetInstances from "../hooks/useInstances";
 import UseDataStore from "../hooks/useDataStore";
 import { formatDisplayValue } from "../lib/mapValues";
 import { createUseStyles } from "react-jss";
-import { usePDF } from "react-to-pdf";
 import moment from "moment/moment";
 import { toTitleCase } from "../lib/helpers";
+import html2PDF from "jspdf-html2canvas";
 
 const useStyles = createUseStyles({
   mainSection: {
@@ -24,7 +24,7 @@ const useStyles = createUseStyles({
     borderColor: "#2B6693 !important",
     "& .ant-divider-inner-text": {
       border: "1px solid #2B6693 !important",
-    }
+    },
   },
 });
 
@@ -41,18 +41,6 @@ const Print = () => {
   const navigate = useNavigate();
   const classes = useStyles();
 
-  const { toPDF, targetRef } = usePDF({
-    filename: "print.pdf",
-    canvas: {
-      mimeType: "image/png",
-      qualityRatio: 1,
-    },
-    page: {
-      margin: 10,
-      format: "letter",
-    },
-  });
-
   const { state } = location;
 
   useEffect(() => {
@@ -60,6 +48,27 @@ const Print = () => {
       navigate("/surgeries");
     }
   }, [state]);
+
+  const handleDownload = () => {
+    let page = document.getElementById("page");
+
+    html2PDF(page, {
+      jsPDF: {
+        format: "a4",
+      },
+      margin: {
+        top: 20,
+        right: 20,
+        bottom: 20,
+        left: 20,
+      },
+      imageType: "image/jpeg",
+      output: `./pdf/CRF-${new Date().toISOString().split("T")[0]}.pdf`,
+      success: function (pdf) {
+        pdf.save(`CRF-${new Date().toISOString().split("T")[0]}.pdf`);
+      },
+    });
+  };
 
   const tableColumns = [
     {
@@ -196,7 +205,7 @@ const Print = () => {
       )}
       <CardItem
         title={
-          <Button onClick={() => toPDF()} icon={<CloudDownloadOutlined />}>
+          <Button onClick={handleDownload} icon={<CloudDownloadOutlined />}>
             Download PDF
           </Button>
         }
@@ -204,7 +213,7 @@ const Print = () => {
         {!components || !attributes ? (
           <CircularLoader />
         ) : (
-          <div ref={targetRef}>
+          <div id="page">
             <div className={classes.mainSection}>
               <Section title="SURGERY SUMMARY" primary={true} />
             </div>

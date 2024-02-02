@@ -159,7 +159,7 @@ export default function UseInstances() {
           order: "created:desc",
           ouMode: "ALL",
           program,
-          pageSize: 100,
+          pageSize: 50,
         },
       },
     };
