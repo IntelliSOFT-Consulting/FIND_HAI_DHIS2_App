@@ -234,14 +234,16 @@ export const disableMicrobiology = (form, events) => {
   // find the id for "Samples sent for culture"
   const samplesSentForCultureId = dataElements?.find((dataElement) => dataElement.name.includes("Samples sent for culture"))?.id;
 
-  const samplesSentForCultureValues = events
-    ?.flatMap((event) => {
-      const value = event?.dataValues?.find((dataValue) => dataValue?.dataElement === samplesSentForCultureId)?.value;
-      return value ? JSON.parse(value) : null;
-    })
-    ?.filter((value) => value);
+  const samplesSentForCultureValues = events?.flatMap((event) => {
+    const value = event?.dataValues?.find((dataValue) => dataValue?.dataElement === samplesSentForCultureId)?.value;
+    return value ? JSON.parse(value) : null;
+  });
 
-  return samplesSentForCultureValues?.length;
+  const falsy = samplesSentForCultureValues?.filter((value) => value === false);
+  const truthy = samplesSentForCultureValues?.filter((value) => value);
+  
+
+  return falsy?.length && !truthy?.length
 };
 
 const getEndOfDay = () => {

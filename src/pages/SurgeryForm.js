@@ -35,7 +35,7 @@ const useStyles = createUseStyles({
     ".ant-card-body": {
       padding: "10px !important",
     },
-    ".ant-list-header": {
+    ".ant-table-title": {
       backgroundColor: "#0067B9 !important",
       color: "white !important",
       "& strong": {
@@ -79,10 +79,6 @@ const useStyles = createUseStyles({
     "& button": {
       marginLeft: "1rem",
     },
-  },
-  summary: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
   },
 });
 
@@ -173,6 +169,33 @@ export default function SurgeryForm() {
     }
   }, [formValues]);
 
+  const patientColumns = [
+    {
+      title: "Name",
+      dataIndex: "name",
+      key: "name",
+      width: "30%",
+      onCell: () => ({
+        style: {
+          backgroundColor: "#F0F5F9",
+          fontWeight: "bold",
+          borderColor: "#D4DFE7",
+        },
+      }),
+    },
+    {
+      title: "Value",
+      dataIndex: "value",
+      key: "value",
+      render: (text, record) => {
+        if (record.valueType === "DATE") {
+          return moment(text).format("YYYY-MM-DD");
+        }
+        return text;
+      },
+    },
+  ];
+
   useEffect(() => {
     if (trackedEntityInstance && enrollment) {
       getEnrollment();
@@ -200,7 +223,7 @@ export default function SurgeryForm() {
 
         const sampleSentForCulture = disableMicrobiology(stageForm, enrollmentData?.events);
 
-        if (!sampleSentForCulture && stageForm?.multiple) {
+        if (sampleSentForCulture && stageForm?.multiple) {
           setIsMicrobiologyDisabled(true);
         }
         const isDisabled = stageForm?.title?.toLowerCase()?.includes("pathogen information") && isMicrobiologyDisabled;
@@ -349,8 +372,8 @@ export default function SurgeryForm() {
             color={statusColor(enrollmentData?.status)}
           >
             <Card>
-              <List
-                header={
+              <Table
+                title={() => (
                   <div className={`${classes.header} ${classes.editButton}`}>
                     <Typography.Text strong>SURGERY SUMMARY</Typography.Text>
                     <div className={classes.edit}>
@@ -361,21 +384,13 @@ export default function SurgeryForm() {
                       )}
                     </div>
                   </div>
-                }
-                bordered
-                dataSource={formValues?.enrollmentValues?.flatMap((section) => section.dataElements)}
-                renderItem={(item) => (
-                  <List.Item>
-                    <div className={classes.summary}>
-                      <Typography.Text style={{ marginRight: "1rem", minWidth: "12rem" }} strong>
-                        {item.name}:
-                      </Typography.Text>{" "}
-                      <Typography.Text>
-                        {item.valueType === "DATE" ? moment(item.value).format("YYYY-MM-DD") : item.value}
-                      </Typography.Text>
-                    </div>
-                  </List.Item>
                 )}
+                bordered
+                columns={patientColumns}
+                size="small"
+                pagination={false}
+                showHeader={false}
+                dataSource={formValues?.enrollmentValues?.flatMap((section) => section.dataElements)}
               />
 
               {formValues?.stagesValues?.map((stage, index) => {
@@ -441,7 +456,7 @@ export default function SurgeryForm() {
                     {stage?.multiple && getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
                       <div className={classes.newEvent}>
                         <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
-                          Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Stage"}
+                          Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Review"}
                         </Button>
                       </div>
                     )}
