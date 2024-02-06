@@ -121,12 +121,7 @@ const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
                   required: dataElement.required,
                   message: `Please input ${dataElement.name}!`,
                 },
-                ...evaluateValidations(
-                  dataElement.validator,
-                  dataElement,
-                  { ...eventsData, ...attributeValues },
-                  dataElements
-                ),
+                ...evaluateValidations(dataElement.validator, dataElement, { ...eventsData, ...attributeValues }, dataElements),
               ]}
             >
               <InputItem

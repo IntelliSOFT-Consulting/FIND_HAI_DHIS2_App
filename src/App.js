@@ -7,7 +7,7 @@ import { Routes, Route, HashRouter } from "react-router-dom";
 import { ConfigProvider } from "antd";
 import { Provider } from "react-redux";
 import store from "./redux/store";
-import './style.css';
+import "./style.css";
 
 const defaultData = {
   borderRadius: 6,
@@ -29,7 +29,7 @@ const query = {
     resource: "programs",
     params: {
       fields: "id,name",
-      filter: "name:ilike:find",
+      filter: "name:ilike:hai",
     },
   },
   // get the last organization unit step
@@ -84,14 +84,14 @@ const MyApp = () => (
                       <NavigationLayout
                         program={data?.programs?.programs[0]}
                         user={data?.me}
-                        title={i18n.t("FIND")}
+                        title={i18n.t("HAI")}
                         organisationUnits={data?.organisationUnits?.organisationUnits[0]}
                       />
                     }
                   />
                   <Route
                     path="/"
-                    element={<Home program={data?.programs?.programs[0]} user={data?.me} title={i18n.t("FIND")} />}
+                    element={<Home program={data?.programs?.programs[0]} user={data?.me} title={i18n.t("HAI")} />}
                   />
                 </Routes>
               );

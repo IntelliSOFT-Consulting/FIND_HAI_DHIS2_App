@@ -24,11 +24,11 @@ const useStyles = createUseStyles({
   }),
 });
 
-export default function Section({ title, primary, padded }) {
+export default function Section({ title, primary, padded, className }) {
   const trimmedTitle = typeof title === "string" ? title.trim() : title;
   const classes = useStyles({ title: trimmedTitle, primary, padded });
   return (
-    <div className={classes.section}>
+    <div className={`${classes.section} ${className}`}>
       <div className={classes.title}>
         <div>{title}</div>
       </div>

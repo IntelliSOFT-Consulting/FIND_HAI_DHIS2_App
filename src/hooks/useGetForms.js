@@ -21,7 +21,7 @@ export default function UseGetForms() {
               "programStages[id,name,repeatable,attributeValues[attribute[id,name],value],programStageSections[id,displayName,programStage,description,dataElements[id,displayName,description,attributeValues[attribute[id,name],value],valueType,optionSet[id,displayName,options[id,displayName,code]]]]]",
               "programSections[name,trackedEntityAttributes[id,name,searchable,description,attributeValues[attribute[id,name],value],valueType,optionSet[options[displayName, code]]]",
             ],
-            filter: "name:ilike:find",
+            filter: "name:ilike:hai",
           },
         },
       });

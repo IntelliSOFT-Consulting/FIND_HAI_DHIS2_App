@@ -4,6 +4,7 @@ import SurgeryForm from "./pages/SurgeryForm";
 import StageForm from "./pages/StageForm";
 import ViewStage from "./pages/ViewStage";
 import Print from "./pages/Print";
+
 const routes = [
   {
     path: "/surgeries",
@@ -35,7 +36,7 @@ const routes = [
   {
     path: "/print/enrollment/:enrollment/tei/:trackedEntityInstance",
     component: Print,
-  }
+  },
 ];
 
 export default routes;
