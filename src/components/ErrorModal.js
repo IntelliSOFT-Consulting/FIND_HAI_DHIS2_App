@@ -2,7 +2,7 @@ import React from "react";
 import { Divider, List, Modal } from "antd";
 import { Link } from "react-router-dom";
 
-export default function ErrorModal({ enrollments, enroll, values, setEnrollments, setLoading }) {
+export default function ErrorModal({ enrollments, enroll, values, setEnrollments, setLoading, loading }) {
   const renderData = () => {
     return (
       <div>
@@ -34,6 +34,7 @@ export default function ErrorModal({ enrollments, enroll, values, setEnrollments
       onOk={() => enroll(values)}
       okText="Register new surgery?"
       title="The patient with this ID already Exists"
+      confirmLoading={loading}
     >
       {renderData()}
     </Modal>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Button, Card, Form, message } from "antd";
+import { Button, Card, Form, message, Spin } from "antd";
 import InputItem from "../components/InputItem";
 import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
@@ -18,9 +18,9 @@ dayjs.extend(weekday);
 dayjs.extend(localeData);
 
 const useStyles = createUseStyles({
-  '@global': {
-    '.ant-card': {
-      backgroundColor: '#fafbfc',
+  "@global": {
+    ".ant-card": {
+      backgroundColor: "#fafbfc",
     },
   },
   form: {
@@ -107,26 +107,25 @@ export default function Register() {
   }, [dataElements]);
 
   const register = async (values) => {
-    const payload = {
-      trackedEntityType: trackedEntityType?.id,
-      orgUnit: id,
-      attributes: Object.keys(values).map((key) => {
-        return {
+    setLoading(true);
+    try {
+      const payload = {
+        trackedEntityType: trackedEntityType?.id,
+        orgUnit: id,
+        attributes: Object.keys(values).map((key) => ({
           attribute: key,
           value: values[key],
-        };
-      }),
-      enrollments: [
-        {
-          orgUnit: id,
-          program,
-          enrollmentDate: new Date(),
-          incidentDate: new Date(),
-        },
-      ],
-    };
+        })),
+        enrollments: [
+          {
+            orgUnit: id,
+            program,
+            enrollmentDate: new Date(),
+            incidentDate: new Date(),
+          },
+        ],
+      };
 
-    try {
       const { response } = await engine.mutate({
         resource: "trackedEntityInstances",
         type: "create",
@@ -135,13 +134,13 @@ export default function Register() {
 
       if (response?.status === "SUCCESS") {
         const trackedEntityInstance = await getEnrollmentData(response?.importSummaries[0]?.reference, true);
-        setLoading(false);
         navigate(`/surgery/${response?.importSummaries[0]?.reference}/${trackedEntityInstance?.enrollment}`);
       }
     } catch (error) {
       const conflicts = getConflicts(error?.details, registration);
       setError(conflicts);
       message.error("Error registering patient");
+    } finally {
       setLoading(false);
     }
   };
@@ -190,14 +189,16 @@ export default function Register() {
     }
   };
 
+  const allDataElements =
+    registration?.flatMap((section) => {
+      return section?.dataElements;
+    }) || [];
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const dataElements = registration?.sections?.flatMap((section) => {
-      return section?.dataElements?.map((dataElement) => ({
-        id: dataElement.id,
-        name: dataElement.name,
-      }));
-    });
+    const dataElements = allDataElements?.map((dataElement) => ({
+      id: dataElement.id,
+      name: dataElement.name,
+    }));
 
     const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
     if (name === dateOfBirthField?.id) {
@@ -209,63 +210,59 @@ export default function Register() {
     }
   };
 
-  const allDataElements =
-    registration?.sections?.flatMap((section) => {
-      return section?.dataElements;
-    }) || [];
-
   return (
-    <Card title='Register Patient'>
-      <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-        {registration?.map((section) => (
-          <>
-            <Accordion title={section.sectionName} open={true}>
-
-            <div className={classes.form}>
-              {section?.dataElements?.map((dataElement) => {
-                const rules = [
-                  {
-                    required: dataElement.required,
-                    message: `Please input ${dataElement.name}!`,
-                  },
-                  ...evaluateValidations(dataElement.validator, dataElement, formValues, allDataElements),
-                ];
-                const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
-                return shouldShow ? (
-                  <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
-                    <InputItem
-                      type={dataElement.options ? "SELECT" : dataElement.valueType}
-                      options={dataElement.options}
-                      placeholder={`Enter ${dataElement.name}`}
-                      name={dataElement.id}
-                      onChange={(e) => {
-                        const name = e?.target?.name || dataElement.id;
-                        const value = e?.target?.value || e;
-                        const allFormValues = form.getFieldsValue();
-                        setFormValues(allFormValues);
-                        handleChange({ target: { name, value } });
-                      }}
-                      disabled={
-                        dataElement?.name?.toLowerCase()?.includes("age") ||
-                        dataElement?.name?.toLowerCase()?.includes("secondary id")
-                      }
-                      onBlur={async () => {
-                        if (dataElement?.name?.toLowerCase()?.includes("patient id")) {
-                          await fetchDemographics(dataElement.id, form.getFieldValue(dataElement.id));
-                        }
-                      }}
-                    />
-                  </Form.Item>
-                ) : null;
-              })}
-            </div>
-            </Accordion>
-          </>
-        ))}
-        <Button type="primary" htmlType="submit" loading={loading} disabled={loading}>
-          Submit
-        </Button>
-      </Form>
+    <Card title="Register Patient">
+      <Spin spinning={loading || !registration} tip="Loading...">
+        <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
+          {registration?.map((section) => (
+            <>
+              <Accordion title={section.sectionName} open={true}>
+                <div className={classes.form}>
+                  {section?.dataElements?.map((dataElement) => {
+                    const rules = [
+                      {
+                        required: dataElement.required,
+                        message: `Please input ${dataElement.name}!`,
+                      },
+                      ...evaluateValidations(dataElement.validator, dataElement, formValues, allDataElements),
+                    ];
+                    const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
+                    return shouldShow ? (
+                      <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
+                        <InputItem
+                          type={dataElement.options ? "SELECT" : dataElement.valueType}
+                          options={dataElement.options}
+                          placeholder={`Enter ${dataElement.name}`}
+                          name={dataElement.id}
+                          onChange={(e) => {
+                            const name = e?.target?.name || dataElement.id;
+                            const value = e?.target?.value || e;
+                            const allFormValues = form.getFieldsValue();
+                            setFormValues(allFormValues);
+                            handleChange({ target: { name, value } });
+                          }}
+                          disabled={
+                            dataElement?.name?.toLowerCase()?.includes("age") ||
+                            dataElement?.name?.toLowerCase()?.includes("secondary id")
+                          }
+                          onBlur={async () => {
+                            if (dataElement?.name?.toLowerCase()?.includes("patient id")) {
+                              await fetchDemographics(dataElement.id, form.getFieldValue(dataElement.id));
+                            }
+                          }}
+                        />
+                      </Form.Item>
+                    ) : null;
+                  })}
+                </div>
+              </Accordion>
+            </>
+          ))}
+          <Button type="primary" htmlType="submit" loading={loading} disabled={loading}>
+            Submit
+          </Button>
+        </Form>
+      </Spin>
       {enrollments && (
         <ErrorModal
           setLoading={setLoading}
@@ -273,6 +270,7 @@ export default function Register() {
           setEnrollments={setEnrollments}
           enroll={register}
           values={formValues}
+          loading={loading}
         />
       )}
     </Card>

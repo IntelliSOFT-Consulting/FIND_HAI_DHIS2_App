@@ -68,7 +68,7 @@ const useStyles = createUseStyles({
   },
 });
 
-const RenderFormSection = ({ section, attributes, dataElements, stageEvents, formValues, dataValues, eventId }) => {
+const RenderFormSection = ({ section, attributes, dataElements, stageEvents, formValues, dataValues, eventId, getEnrollment }) => {
   const [saving, setSaving] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
 
@@ -113,6 +113,7 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
       const response = await createEvents(createEventsPayload);
       if (response) {
         message.success("Form submitted successfully");
+        await getEnrollment();
         setSaving(false);
       }
     } catch (error) {

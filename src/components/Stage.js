@@ -127,6 +127,7 @@ export default function Stage({
             dataValues={dataValues}
             stageForm={stageForm}
             eventId={eventId}
+            getEnrollment={getEnrollment}
           />
         );
       })}

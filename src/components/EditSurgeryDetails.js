@@ -52,6 +52,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
       }));
     });
 
+
     const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
     if (name === dateOfBirthField?.id) {
       const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");

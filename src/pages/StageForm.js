@@ -92,14 +92,7 @@ export default function StageForm() {
   const stageForm = stages?.find((item) => item.stageId === stage);
 
   const getEnrollment = async () => {
-    const firstFetch = await getEnrollmentData();
-    let data;
-    if (firstFetch?.events?.some((event) => event?.status === "COMPLETED")) {
-      await activateAllEvents(firstFetch?.events);
-      data = await getEnrollmentData();
-    } else {
-      data = firstFetch;
-    }
+    const data = await getEnrollmentData();
 
     if (data?.status) {
       const attributes = data?.attributes?.map((attribute) => ({
@@ -176,6 +169,7 @@ export default function StageForm() {
                 eventId={queryParams.event}
                 stageForm={stageForm}
                 stageEvents={stageEvents}
+                getEnrollment={getEnrollment}
               />
             )}
           </div>
