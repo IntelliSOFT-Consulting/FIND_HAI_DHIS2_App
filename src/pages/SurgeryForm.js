@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Badge, Breadcrumb, Tooltip, Card, List, Typography } from "antd";
+import { Table, Button, Badge, Breadcrumb, Tooltip, Card, Spin, Typography } from "antd";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { setAttributes } from "../redux/actions";
@@ -144,7 +144,7 @@ export default function SurgeryForm() {
 
     dispatch(setAttributes(attributes));
 
-    const enrollmentValues = formatValues(registration, data);
+    const enrollmentValues = formatValues(registration, data, "enrollment");
 
     const stagesValues = stages?.map((stage) => {
       const stageValues = data?.events?.filter((event) => event.programStage === stage.stageId);
@@ -216,7 +216,7 @@ export default function SurgeryForm() {
       render: (text, record) => {
         const stageForm = stages?.find((stage) => stage?.stageId === record?.programStage);
 
-        const params = record?.repeatable && stageForm?.multiple ? `?event=${record?.event}` : "";
+        const params = stageForm?.multiple ? `?event=${record?.event}` : "";
         const userCanEdit = user?.userRoles?.some((role) =>
           ["superuser", "administrator", "admin", "pca - administrator"].includes(role?.displayName?.toLowerCase())
         );
@@ -266,7 +266,7 @@ export default function SurgeryForm() {
       mappings = [];
     }
 
-    const stageIds = [...new Set(stage?.sections?.map((section) => section?.stageId))];
+    const stageIds = [...new Set(stage?.sections?.map((section) => section?.stage?.stageId))];
 
     const events = await createStageEvents(stageIds, []);
     if (events) {
@@ -349,29 +349,25 @@ export default function SurgeryForm() {
 
   return (
     <>
-      {!formValues ? (
-        <CircularLoader />
-      ) : (
-        <div>
-          <Breadcrumb
-            separator={<DoubleLeftOutlined />}
-            style={{ marginBottom: "1rem" }}
-            items={[
-              {
-                title: <Link to="/surgeries">Surgeries</Link>,
-              },
-              {
-                title: "Surgery Details",
-              },
-            ]}
-          />
-          <Badge.Ribbon
-            text={
-              enrollmentData?.status === "ACTIVE" ? "ACTIVE" : enrollmentData?.status === "COMPLETED" ? "COMPLETED" : "CLOSED"
-            }
-            color={statusColor(enrollmentData?.status)}
-          >
-            <Card>
+      <div>
+        <Breadcrumb
+          separator={<DoubleLeftOutlined />}
+          style={{ marginBottom: "1rem" }}
+          items={[
+            {
+              title: <Link to="/surgeries">Surgeries</Link>,
+            },
+            {
+              title: "Surgery Details",
+            },
+          ]}
+        />
+        <Badge.Ribbon
+          text={enrollmentData?.status === "ACTIVE" ? "ACTIVE" : enrollmentData?.status === "COMPLETED" ? "COMPLETED" : "CLOSED"}
+          color={statusColor(enrollmentData?.status)}
+        >
+          <Card>
+            <Spin spinning={!formValues} tip="Loading...">
               <Table
                 title={() => (
                   <div className={`${classes.header} ${classes.editButton}`}>
@@ -424,7 +420,7 @@ export default function SurgeryForm() {
                       }
                     />
 
-                    {!stage?.repeatable || (stage?.repeatable && !stage?.multiple)
+                    {!stage?.multiple
                       ? stage?.events?.slice(0, 1)?.map((event, i) => (
                           <div className={classes.event} key={i}>
                             <Table
@@ -471,10 +467,10 @@ export default function SurgeryForm() {
                 )}
                 {footer}
               </div>
-            </Card>
-          </Badge.Ribbon>
-        </div>
-      )}
+            </Spin>
+          </Card>
+        </Badge.Ribbon>
+      </div>
 
       <Overdue
         overdue={showOverdue}

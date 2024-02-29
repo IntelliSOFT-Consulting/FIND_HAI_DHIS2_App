@@ -32,7 +32,7 @@ export function tableDataToObject(tableData) {
   };
 }
 
-const formatAttributeValues = (attributes) => {
+export const formatAttributeValues = (attributes) => {
   return attributes.reduce((acc, attributeValue) => {
     const key = attributeValue?.attribute?.name?.toLowerCase();
     if (key) {
@@ -194,7 +194,10 @@ export function generateWeeks() {
 export const evaluateShowIf = (str, formValues = {}) => {
   if (!str || !formValues || Object.keys(formValues)?.length === 0) return false;
   const [fieldId, operator, value] = str.split(":");
-  const fieldValue = formValues[fieldId]?.toString()?.toLowerCase();
+  const fieldValue =
+    typeof formValues[fieldId] === "object"
+      ? JSON.stringify(formValues[fieldId])?.toLowerCase()
+      : formValues[fieldId]?.toString()?.toLowerCase();
   const valueArray = value?.split(",").map((item) => item?.toLowerCase());
 
   switch (operator) {
@@ -225,10 +228,10 @@ export const evaluateShowIf = (str, formValues = {}) => {
 
 export const disableMicrobiology = (form, events) => {
   const dataElements = form?.sections?.flatMap((section) => {
-    return section?.dataElements?.map((dataElement) => ({
-      id: dataElement.id,
-      name: dataElement.name,
-    }));
+    const {
+      stage: { sections },
+    } = section;
+    return sections?.flatMap((section) => section?.elements);
   });
 
   // find the id for "Samples sent for culture"
@@ -241,9 +244,8 @@ export const disableMicrobiology = (form, events) => {
 
   const falsy = samplesSentForCultureValues?.filter((value) => value === false);
   const truthy = samplesSentForCultureValues?.filter((value) => value);
-  
 
-  return falsy?.length && !truthy?.length
+  return falsy?.length && !truthy?.length;
 };
 
 const getEndOfDay = () => {

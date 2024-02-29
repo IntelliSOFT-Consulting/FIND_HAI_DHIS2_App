@@ -40,7 +40,7 @@ const styles = createUseStyles({
   content: {
     padding: "24px",
     overflow: "auto",
-    backgroundColor: "#FAFAFA",
+    // backgroundColor: "#FAFAFA",
     minHeight: "calc(100vh - 48px)",
     width: "100%",
   },
@@ -127,7 +127,7 @@ const NavigationLayout = ({ user, program, organisationUnits }) => {
         <Menu onClick={onClick} defaultSelectedKeys={["1"]} defaultOpenKeys={["/"]} mode="inline" items={items} />
       </Sider>
 
-      <Content className={classes.content}>
+      <Content className={`${classes.content} bg-blue-light`}>
         <Routes>
           {routes.map((route) => (
             <Route

@@ -22,9 +22,9 @@ export const formatDisplayValue = (value) => {
   return value;
 };
 
-export const formatValues = (form, dataValues) => {
-  const dataElements = form?.sections?.map((section) => {
-    if (form.enrollment) {
+export const formatValues = (form, dataValues, type=null) => {
+  const dataElements = form?.map((section) => {
+    if (type === 'enrollment') {
       return {
         ...section,
         dataElements: section?.dataElements?.map((dataElement) => {
@@ -34,7 +34,7 @@ export const formatValues = (form, dataValues) => {
             name: dataElement.name,
             valueType: dataElement.valueType,
             compulsory: dataElement.compulsory,
-            optionSet: dataElement.optionSet,
+            options: dataElement.options,
             value: dataValue?.value,
           };
         }),
@@ -42,14 +42,14 @@ export const formatValues = (form, dataValues) => {
     }
     return {
       ...section,
-      dataElements: section?.dataElements?.map((dataElement) => {
+      dataElements: section?.elements?.map((dataElement) => {
         const dataValue = dataValues?.dataValues?.find((dataValue) => dataValue.dataElement === dataElement.id);
         return {
           id: dataElement.id,
           name: dataElement.name,
           valueType: dataElement.valueType,
           required: dataElement.compulsory,
-          optionSet: dataElement.optionSet,
+          options: dataElement.options,
           value: dataValue?.value,
         };
       }),

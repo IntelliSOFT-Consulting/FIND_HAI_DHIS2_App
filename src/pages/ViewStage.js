@@ -1,101 +1,121 @@
 import React, { useEffect, useState } from "react";
-import { Breadcrumb, Table } from "antd";
+import { Breadcrumb, Spin, Table } from "antd";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { DoubleLeftOutlined } from "@ant-design/icons";
-import { CircularLoader } from "@dhis2/ui";
 import Section from "../components/Section";
 import CardItem from "../components/CardItem";
 import useGetInstances from "../hooks/useInstances";
 import UseDataStore from "../hooks/useDataStore";
 import { formatDisplayValue } from "../lib/mapValues";
 
+const parseQueryString = (location) => {
+  const queryString = location.search.substring(1);
+  const params = queryString.split("&");
+  return params.reduce((paramObject, param) => {
+    const [key, value] = param.split("=");
+    paramObject[key] = value;
+    return paramObject;
+  }, {});
+};
+
+const formSections = (stageForm) => {
+  return stageForm?.sections
+    ?.map((section) => {
+      const { stage } = section;
+      return stage.sections;
+    })
+    .flat(2);
+};
+
 const ViewStage = () => {
   const [columns, setColumns] = useState(null);
+  const [mappings, setMappings] = useState(null);
   const { stages } = useSelector((state) => state.forms);
   const { getEnrollmentData } = useGetInstances();
   const { getData } = UseDataStore();
   const { stage, enrollment, trackedEntityInstance } = useParams();
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
   const location = useLocation();
+  const queryParams = parseQueryString(location);
+  const stageForm = stages?.find((item) => item.stageId === stage);
 
-  const parseQueryString = () => {
-    const queryString = location.search.substring(1);
-    const params = queryString.split("&");
-    return params.reduce((paramObject, param) => {
-      const [key, value] = param.split("=");
-      paramObject[key] = value;
-      return paramObject;
-    }, {});
+  const fetchMappings = async () => {
+    const response = await getData("repeatSections", "postOperative");
+    setMappings(response);
   };
 
-  const queryParams = parseQueryString();
+  const getStageEvents = (datas, stageId) => {
+    const { events } = datas;
 
-  const stageForm = stages?.find((item) => item.stageId === stage);
+    const filtered = events
+      .filter((event) => {
+        if (queryParams?.event) {
+          const eventMappings = mappings?.filter((mapping) => mapping?.parentEvent === queryParams?.event);
+          return eventMappings?.some((mapping) => mapping?.event === event.event) && stageId === event.programStage;
+        }
+        return stageId === event.programStage;
+      })
+      .sort((a, b) => new Date(a.created) - new Date(b.created));
+
+    const dataElements = formSections(stageForm)
+      ?.map((section) => {
+        return section.elements;
+      })
+      .flat(2);
+
+    const dataElementIds = dataElements?.map((element) => element.id);
+    return filtered
+      .map((event) => {
+        return event.dataValues.reduce((acc, cur) => {
+          if (dataElementIds?.includes(cur.dataElement)) {
+            acc[cur.dataElement] = formatDisplayValue(cur.value) || "-";
+          }
+          return acc;
+        }, {});
+      })
+      .flat(1);
+  };
+
+  const createTables = (data) => {
+    return stageForm.sections.flatMap((item) => {
+      const { stage: sectionStage } = item;
+      return sectionStage.sections.map((section) => {
+        const columns = section.elements.map((element) => ({
+          title: element.name,
+          dataIndex: element.id,
+          key: element.id,
+        }));
+
+        const stageEvents = getStageEvents(data, sectionStage.stageId);
+
+        return {
+          title: section.sectionName,
+          columns,
+          dataSource: stageEvents,
+        };
+      });
+    });
+  };
 
   const getEnrollment = async () => {
     const data = await getEnrollmentData();
     if (data?.status) {
-      const stageValues = await filterAndSortEvents(data.events);
-      if (stageValues && stageForm) {
-        setColumns(createColumns(stageForm, stageValues));
+      if (stageForm) {
+        setColumns(createTables(data));
       }
     }
   };
 
-  const filterAndSortEvents = async (events) => {
-    const mappings = await getData("repeatSections", "postOperative");
-    const repeatIds = [...new Set(stageForm?.sections?.filter((section) => section?.repeatable && !section.multiple)?.map((section) => section?.stageId))]
-    return events
-      ?.filter((event) => {
-        if (queryParams.event) {
-          const repeatEvents = mappings
-            .filter((mapping) => mapping?.parentEvent === queryParams.event)
-            ?.map((mapping) => mapping?.event);
-          return event.event === queryParams.event || repeatEvents?.includes(event.event);
-        }
-        return event.programStage === stage || repeatIds?.includes(event.programStage);
-      })
-      ?.sort((a, b) => a.created - b.created);
-  };
+  useEffect(() => {
+    fetchMappings();
+  }, []);
 
   useEffect(() => {
-    if (stageForm) {
+    if (stageForm && mappings) {
       getEnrollment();
     }
-  }, [stageForm, location]);
-
-  const createColumns = (formData, data) => {
-    return [...formData?.sections]?.map((section) => {
-      const sectionData = data?.filter((item) => item?.programStage === (section?.stageId || section.programStage));
-      const sectionValues = sectionData?.flatMap((item) =>
-        item?.dataValues?.reduce((acc, curr) => {
-          acc[curr?.dataElement] = formatDisplayValue(curr?.value);
-          return acc;
-        }, {})
-      );
-
-      const sectionDataElementIds = section?.dataElements?.map((dataElement) => dataElement?.id);
-      const sectionValuesData = sectionValues?.filter((item) => {
-        const sectionKeys = Object.keys(item);
-        return sectionKeys?.some((key) => sectionDataElementIds?.includes(key));
-      });
-
-      return {
-        name: section.title,
-        programStage: section.programStage,
-        columns: section.dataElements?.map((dataElement) => ({
-          title: dataElement.name,
-          dataIndex: dataElement.id,
-          key: dataElement.id,
-          render: (value) => value || "-",
-        })),
-        data: sectionValuesData,
-      };
-    });
-  };
-
-
+  }, [stageForm, location, mappings]);
 
   return (
     <>
@@ -111,23 +131,21 @@ const ViewStage = () => {
         />
       )}
       <CardItem title={stageForm?.title}>
-        {!columns ? (
-          <CircularLoader />
-        ) : (
-          columns?.map((column, index) => (
+        <Spin spinning={!columns} tip="Loading...">
+          {columns?.map((column, index) => (
             <React.Fragment key={index}>
-              <Section title={column?.name} />
+              <Section title={column?.title} />
               <Table
                 columns={column?.columns || []}
-                dataSource={column?.data || []}
+                dataSource={column?.dataSource || []}
                 pagination={false}
                 bordered
                 style={{ marginBottom: "1rem" }}
                 size="small"
               />
             </React.Fragment>
-          ))
-        )}
+          ))}
+        </Spin>
       </CardItem>
     </>
   );

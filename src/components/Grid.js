@@ -1,6 +1,6 @@
 import React from "react";
 import { Table } from "antd";
-import Accordion from "./Accordion";
+import SurgeryHeader from "./SurgeryHeader";
 import Section from "./Section";
 import { createUseStyles } from "react-jss";
 
@@ -40,7 +40,7 @@ const Grid = ({ surgery, initialValues }) => {
   ];
   return (
     <div className={classes.form}>
-      <Accordion title={surgery.title} open={true}>
+      <SurgeryHeader title={surgery.title} open={true}>
         {surgery.sections.map((section, index) => {
           return (
             <>
@@ -63,7 +63,7 @@ const Grid = ({ surgery, initialValues }) => {
             </>
           );
         })}
-      </Accordion>
+      </SurgeryHeader>
     </div>
   );
 };

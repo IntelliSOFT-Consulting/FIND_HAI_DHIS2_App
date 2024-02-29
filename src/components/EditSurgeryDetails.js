@@ -45,7 +45,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    const dataElements = registration?.sections?.flatMap((section) => {
+    const dataElements = registration?.flatMap((section) => {
       return section?.dataElements?.map((dataElement) => ({
         id: dataElement.id,
         name: dataElement.name,
@@ -62,7 +62,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
     }
   };
 
-  const dataElements = registration?.sections?.flatMap((section) => {
+  const dataElements = registration?.flatMap((section) => {
     return section?.dataElements?.map((dataElement) => ({
       id: dataElement.id,
       name: dataElement.name,
@@ -105,7 +105,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
           }, {}),
         }}
       >
-        {registration?.sections?.map((section) => (
+        {registration?.map((section) => (
           <>
             <Section key={section?.id} title={section?.title} />
             {section?.dataElements?.map((dataElement) => {
@@ -130,11 +130,8 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                   hidden={!shouldShow}
                 >
                   <InputItem
-                    type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
-                    options={dataElement.optionSet?.options?.map((option) => ({
-                      label: option.name,
-                      value: option.code,
-                    }))}
+                    type={dataElement.options ? "SELECT" : dataElement.valueType}
+                    options={dataElement.options}
                     placeholder={dataElement.name}
                     disabled={
                       dataElement?.name?.toLowerCase()?.includes("age") ||

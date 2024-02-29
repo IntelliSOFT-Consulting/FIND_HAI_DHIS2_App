@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Form, Button } from "antd";
-import Accordion from "./Accordion";
+import SurgeryHeader from "./SurgeryHeader";
 import InputItem from "./InputItem";
 import Section from "./Section";
 import { createUseStyles } from "react-jss";
@@ -164,7 +164,7 @@ const Forms = ({
       {hasValues(surgery) && !edit ? (
         <Grid surgery={surgery} initialValues={initialValues} />
       ) : (
-        <Accordion
+        <SurgeryHeader
           title={surgery.title}
           footer={
             <Button type="primary" htmlType="submit">
@@ -210,7 +210,7 @@ const Forms = ({
               </>
             );
           })}
-        </Accordion>
+        </SurgeryHeader>
       )}
     </Form>
   );

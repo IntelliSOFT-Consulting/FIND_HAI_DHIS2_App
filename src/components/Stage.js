@@ -1,28 +1,28 @@
-import React, { useState, useEffect } from "react";
-import { Button, Form } from "antd";
+import React, { useState } from "react";
+import { Button, Form, Divider } from "antd";
 import { createUseStyles } from "react-jss";
-import { useNavigate, useParams } from "react-router-dom";
-import RepeatForm from "./RepeatForm";
-import Section from "./Section";
+import { useNavigate } from "react-router-dom";
 import UseDataStore from "../hooks/useDataStore";
 import useEnrollment from "../hooks/useEnrollment";
 import InputItem from "./InputItem";
 import useEvents from "../hooks/useEvents";
 import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues } from "../lib/helpers";
+import Accordion from "./Accordion";
 
 import {
-  getSectionMappings,
-  getSectionEvents,
   getNonRepeatingEvents,
   getRepeatingEvents,
-  getUpdatedEvents,
   getRepeatingValues,
+  getSectionEvents,
+  getSectionMappings,
+  getUpdatedEvents,
 } from "../lib/stageHelpers";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 import weekday from "dayjs/plugin/weekday";
 import localeData from "dayjs/plugin/localeData";
 import UseInstances from "../hooks/useInstances";
+import RenderFormSection from "./RenderFormSection";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -41,9 +41,11 @@ const useStyles = createUseStyles({
     display: "flex",
     justifyContent: "flex-end",
     width: "100% !important",
+    borderTop: "0.5px solid rgba(0,0,0,0.1)",
+    marginTop: "1rem",
   },
   submitButton: {
-    margin: "1rem",
+    margin: "5px",
     backgroundColor: "#026C26 !important",
     color: "white",
     borderColor: "#026C26 !important",
@@ -53,7 +55,7 @@ const useStyles = createUseStyles({
     },
   },
   cancelButton: {
-    margin: "1rem",
+    margin: "5px",
     backgroundColor: "#B10606",
     color: "white",
     borderColor: "#B10606 !important",
@@ -109,269 +111,25 @@ export default function Stage({
 
   const { createEvents, deleteEvents } = useEvents();
 
-  const unifyValues = () => {
-    const values = form.getFieldsValue();
-    const unifiedValues = {};
-    Object.keys(values).forEach((key) => {
-      if (Array.isArray(values[key])) {
-        unifiedValues[key] = values[key]?.map((value) => {
-          if (value?.value) {
-            return value.value;
-          } else {
-            return value;
-          }
-        });
-      } else {
-        unifiedValues[key] = values[key];
-      }
-    });
-
-    setFormValues(unifiedValues);
-    return unifiedValues;
-  };
-
-  const eventsData = enrollmentData?.events?.reduce((acc, curr) => {
-    const values = {};
-    for (const dataValue of curr?.dataValues) {
-      values[dataValue.dataElement] = dataValue.value;
-    }
-    return {
-      ...acc,
-      ...values,
-    };
-  }, {});
-
-  const handleSubmit = async () => {
-    try {
-      await form.validateFields();
-      form.submit();
-    } catch (errorInfo) {
-      if (errorInfo.errorFields.length > 0) {
-        const errorField = document.querySelector(".ant-form-item-has-error");
-        errorField.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-          inline: "center",
-        });
-      }
-    }
-  };
-
-  const handleFinish = async (values) => {
-    try {
-      const mappings = await getData("repeatSections", "postOperative");
-      const nonRepeatingStages = stageForm.sections.filter((section) => !section.repeatable || section.stageId === "IbB9QEgQU6D");
-      const repeatingStages = stageForm.sections.filter((section) => section.repeatable);
-
-      const sectionMappings = getSectionMappings(mappings, eventId);
-      const sectionEvents = getSectionEvents(enrollmentData, sectionMappings, eventId);
-      const nonRepeatingEvents = getNonRepeatingEvents(sectionEvents, nonRepeatingStages);
-      const repeatingEvents = getRepeatingEvents(sectionEvents, repeatingStages);
-      const updatedEvents = getUpdatedEvents(nonRepeatingEvents, nonRepeatingStages, values);
-      const repeatingValues = getRepeatingValues(values);
-
-      const updatedRepeatingEvents = await Promise.all(
-        Object.keys(repeatingValues).flatMap(async (programStageId) => {
-          const stageEvents = repeatingEvents.filter((event) => event.programStage === programStageId);
-
-          repeatingValues[programStageId].forEach((value, index) => {
-            const stageDataElements = stageForm.sections
-              ?.filter((section) => section.stageId === programStageId)
-              ?.flatMap((section) => section.dataElements);
-
-            if (stageEvents[index]) {
-              stageEvents[index].dataValues = stageDataElements.map((dataElement) => ({
-                dataElement: dataElement.id,
-                value: value[dataElement.id],
-              }));
-            } else {
-              stageEvents.push({
-                programStage: programStageId,
-                program: enrollmentData.program,
-                enrollment: enrollmentData.enrollment,
-                orgUnit: enrollmentData.orgUnit,
-                trackedEntityInstance: enrollmentData.trackedEntityInstance,
-                eventDate: new Date().toISOString().split("T")[0],
-                status: "COMPLETED",
-                completedDate: new Date().toISOString().split("T")[0],
-                dataValues: stageDataElements.map((dataElement) => ({
-                  dataElement: dataElement.id,
-                  value: value[dataElement.id],
-                })),
-              });
-            }
-          });
-
-          if (stageEvents.length > repeatingValues[programStageId].length) {
-            const extras = stageEvents.slice(repeatingValues[programStageId].length);
-            await deleteEvents(extras);
-          }
-
-          return stageEvents;
-        })
-      );
-
-      const payload = [...updatedEvents, ...updatedRepeatingEvents].flat()?.map((item) => ({ ...item, status: "COMPLETED" }));
-
-      const response = await createEvents(payload);
-
-      setPreFilled({});
-
-      if (response) {
-        if (eventId) {
-          const newMappings = response?.map((mapping) => {
-            return {
-              parentEvent: eventId,
-              event: mapping,
-            };
-          });
-          await saveData("repeatSections", "postOperative", [...mappings, ...newMappings]);
-        }
-
-        if (stageForm?.title?.toLowerCase() === "outcome") {
-          await getEnrollment();
-          const enrollment = await getEnrollmentData();
-          await updateEnrollment(enrollmentData?.enrollment, { ...enrollment, status: "COMPLETED" });
-        }
-        navigate(surgeryLink);
-      }
-    } catch (errorInfo) {
-      setError(errorInfo);
-    }
-  };
-
-  const showSection = (section, formValues) => {
-    const formValuesObject = formValues ? formValues : dataValues;
-    if (!formValuesObject) {
-      return true;
-    }
-    if (section.title === "Antimicrobial Susceptibility Testing") {
-      const specType = "ifncEH9ZQwB";
-      const specTypeValues = formValuesObject ? formValuesObject[specType] : [];
-
-      const values = specTypeValues?.flatMap((item) => (item ? Object.values(item) : []));
-      const noGrowth = values?.some((value) => value === "No growth");
-      return !noGrowth;
-    }
-
-    if (section.title === "Symptoms" || section.title === "INFECTION INFORMATION") {
-      return formValuesObject["fkxHVloTLwR"] === "true" || formValuesObject["fkxHVloTLwR"] === true;
-    }
-
-    return true;
-  };
+  const handleSubmit = async () => {};
 
   return (
-    <Form
-      className={classes.form}
-      form={form}
-      layout="vertical"
-      onValuesChange={(changedValues, allValues) => {
-        unifyValues();
-      }}
-      initialValues={dataValues}
-      onFinish={handleFinish}
-      autoComplete="off"
-    >
+    <div className={`${classes.form} ${classes.fullWidth}`}>
       {stageForm.sections.map((section, index) => {
-        const values = formValues || dataValues;
-        if (!showSection(section, values)) {
-          const sectionValues = values[section.stageId];
-          if (sectionValues) {
-            const newFormValues = { ...values };
-            delete newFormValues[section.stageId];
-            form.setFieldsValue(newFormValues);
-            setFormValues(newFormValues);
-          }
-          return null;
-        }
-        if (section.repeatable && section.stageId !== "IbB9QEgQU6D") {
-          return (
-            <>
-              <div className={classes.fullWidth}>
-                <Section key={section.sectionId} title={section.title} />
-              </div>
-              <RepeatForm
-                key={section.sectionId}
-                Form={Form}
-                form={form}
-                section={section}
-                formValues={formValues || dataValues}
-                setDataValues={setDataValues}
-                eventsData={eventsData}
-                preFilled={preFilled}
-                setPreFilled={setPreFilled}
-              />
-            </>
-          );
-        } else {
-          return (
-            <>
-              <div className={classes.fullWidth}>
-                <Section key={section.sectionId} title={section.title} />
-              </div>
-              {section.dataElements?.map((dataElement) => {
-                const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues || dataValues);
-
-                if (!shouldShow) {
-                  form.setFieldValue(dataElement.id, null);
-                }
-                return (
-                  shouldShow && (
-                    <Form.Item
-                      key={dataElement.id}
-                      label={dataElement.name}
-                      name={dataElement.id}
-                      rules={[
-                        {
-                          required: dataElement.required,
-                          message: `${dataElement.name} is required.`,
-                        },
-                        ...evaluateValidations(
-                          dataElement.validator,
-                          dataElement,
-                          {
-                            ...formatAttributes(attributes),
-                            ...formatDataValues(stageEvents),
-                            ...(formValues || dataValues),
-                          },
-                          [...dataElements, ...attributes]
-                        ),
-                      ]}
-                      className={section.dataElements.length === 1 ? classes.fullWidth : null}
-                    >
-                      <InputItem
-                        type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
-                        options={dataElement.optionSet?.options?.map((option) => ({
-                          label: option.displayName,
-                          value: option.code,
-                        }))}
-                        placeholder={`Enter ${dataElement.name}`}
-                        name={dataElement.id}
-                        {...(dataElement.disablefuturedate
-                          ? {
-                              disabledDate: (current) => {
-                                return current && current > dayjs().endOf("day");
-                              },
-                            }
-                          : {})}
-                      />
-                    </Form.Item>
-                  )
-                );
-              })}
-            </>
-          );
-        }
+        return (
+          <RenderFormSection
+            section={section}
+            key={section.id}
+            dataElements={dataElements}
+            attributes={attributes}
+            stageEvents={stageEvents}
+            formValues={ formValues }
+            dataValues={dataValues}
+            stageForm={stageForm}
+            eventId={eventId}
+          />
+        );
       })}
-      <Form.Item className={classes.buttonsContainer}>
-        <Button className={classes.cancelButton} htmlType="button" onClick={() => navigate(surgeryLink)}>
-          Cancel
-        </Button>
-        <Button className={classes.submitButton} htmlType="button" onClick={handleSubmit}>
-          Submit
-        </Button>
-      </Form.Item>
-    </Form>
+    </div>
   );
 }

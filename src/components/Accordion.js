@@ -1,58 +1,82 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { createUseStyles } from "react-jss";
-import { Button } from "antd";
+import { TransitionMotion, spring } from "react-motion";
+import { CaretDownOutlined, CaretUpOutlined } from "@ant-design/icons";
 
 const useStyles = createUseStyles({
-  accordion: ({ isActive }) => ({
-    width: "100%",
-    margin: "2rem auto",
-    border: isActive ? "1px solid #ccc" : "none",
-  }),
-  accordionTitle: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    cursor: "pointer",
-    backgroundColor: "#F6F6F6",
-    fontSize: "14px",
-    fontWeight: "500",
-    borderRadius: "2px",
+  accordion: {
+    border: "0.5px solid rgba(0,0,0,.125)",
+    boxShadow: "0px 1px 2px 0px rgba(33, 41, 52, 0.06), 0px 1px 3px 0px rgba(33, 41, 52, 0.1)",
+    marginBottom: "1rem",
+  },
+  accordionItem: {
+    borderBottom: "1px solid #ccc",
+  },
+  accordionHeader: {
     padding: "10px",
-    color: "#0067B9",
-    "&:hover": {
-      backgroundColor: "#efefef",
-    },
-  },
-  accordionButton: {},
-  accordionContent: {
-    padding: "0px",
-  },
-  accordionFooter: {
-    padding: "1rem",
-    backgroundColor: "#E5F1FA",
+    cursor: "pointer",
     display: "flex",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
+    alignItems: "center",
+    height: "40px",
+    color: "#fff",
+    position: "relative",
+  },
+  icon: {
+    position: "absolute",
+    right: "10px",
+  },
+  accordionTitleActive: {
+    backgroundColor: "#f0f0f0",
+  },
+  content: {
+    backgroundColor: "white",
+    transition: "max-height 0.3s ease-in-out, opacity 0.3s ease-in-out",
+  },
+  show: {
+    maxHeight: "5000px",
+    opacity: 1,
+    overflow: "hidden",
+    height: "fit-content",
+    padding: "10px",
+  },
+  hide: {
+    maxHeight: 0,
+    overflow: "hidden",
+    opacity: 0,
   },
 });
 
-const Accordion = ({ title, footer, open, children }) => {
-  const [isActive, setIsActive] = useState(open);
-  const classes = useStyles({ isActive });
+const Accordion = ({ title, open = false, extra, children }) => {
+  const [activeIndex, setActiveIndex] = useState(open);
+
+  const childRef = useRef(null);
+
+  const classes = useStyles();
+  const onItemClick = () => {
+    if (!activeIndex) {
+      childRef.current.style.padding = "10px";
+      setActiveIndex(!activeIndex);
+    } else {
+      const setPadding = setTimeout(() => {
+        childRef.current.style.padding = "0px";
+      }, 300);
+      setActiveIndex(!activeIndex);
+      return () => clearTimeout(setPadding);
+    }
+  };
 
   return (
     <div className={classes.accordion}>
-      <div className={classes.accordionTitle}>
-        <div>{title}</div>
-        <div className={classes.accordionButton}>
-          {!isActive && (
-            <Button type="primary" onClick={() => setIsActive(!isActive)}>
-              Add
-            </Button>
-          )}
-        </div>
+      <div className={`${classes.accordionHeader} bg-blue`} onClick={() => onItemClick()}>
+        <div className={classes.title}>{title}</div>
+        <div>{extra}</div>
+        <div className={classes.icon}>{activeIndex ? <CaretUpOutlined /> : <CaretDownOutlined />}</div>
       </div>
-      {isActive && <div className={classes.accordionContent}>{children}</div>}
-      {footer && isActive && <div className={classes.accordionFooter}>{footer}</div>}
+
+      <div ref={childRef} className={`${classes.content} ${activeIndex ? classes.show : classes.hide}`}>
+        <div style={{ overflow: "hidden" }}>{children}</div>
+      </div>
     </div>
   );
 };

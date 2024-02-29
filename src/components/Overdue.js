@@ -36,6 +36,8 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
     </div>
   );
 
+  console.log("outcome", outcome);
+
   return (
     <Modal
       open={overdue || discontinue}
@@ -47,41 +49,45 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
       footer={footer}
     >
       <Form form={form} layout="vertical" onFinish={(values) => onFinish(values, outcome?.stageId)}>
-        {outcome?.sections?.map((section) => (
-          <>
-            <Section key={section.id} title={section.title} />
-            {section?.dataElements?.map((dataElement) => (
-              <Form.Item
-                label={dataElement.name}
-                name={dataElement.id}
-                valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
-                rules={[
-                  {
-                    required: dataElement?.required,
-                    message: `Please input ${dataElement.name}!`,
-                  },
-                ]}
-              >
-                <InputItem
-                  type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
-                  options={dataElement?.optionSet?.options?.map((option) => ({
-                    label: option.displayName,
-                    value: option.code,
-                  }))}
-                  placeholder={`Enter ${dataElement.name}`}
-                  name={dataElement.id}
-                  {...(dataElement.disablefuturedate
-                    ? {
-                        disabledDate: (current) => {
-                          return current && current > dayjs().endOf("day");
-                        },
-                      }
-                    : {})}
-                />
-              </Form.Item>
-            ))}
-          </>
-        ))}
+        {outcome?.sections?.map((item) => {
+          return item.stage.sections.map((section) => {
+            return (
+              <>
+                <Section key={section.id} title={section.title} />
+                {section?.elements?.map((dataElement) => (
+                  <Form.Item
+                    label={dataElement.name}
+                    name={dataElement.id}
+                    valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
+                    rules={[
+                      {
+                        required: dataElement?.required,
+                        message: `Please input ${dataElement.name}!`,
+                      },
+                    ]}
+                  >
+                    <InputItem
+                      type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
+                      options={dataElement?.optionSet?.options?.map((option) => ({
+                        label: option.displayName,
+                        value: option.code,
+                      }))}
+                      placeholder={`Enter ${dataElement.name}`}
+                      name={dataElement.id}
+                      {...(dataElement.disablefuturedate
+                        ? {
+                            disabledDate: (current) => {
+                              return current && current > dayjs().endOf("day");
+                            },
+                          }
+                        : {})}
+                    />
+                  </Form.Item>
+                ))}
+              </>
+            );
+          });
+        })}
       </Form>
     </Modal>
   );
