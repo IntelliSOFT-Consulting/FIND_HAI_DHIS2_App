@@ -52,10 +52,10 @@ const useStyles = createUseStyles({
     border: "1px dashed #ccc",
     padding: "1rem",
     borderRadius: "5px",
-    '& >div:not(:first-child)': {
+    "& >div:not(:first-child)": {
       marginTop: "1rem",
       borderTop: "1px solid #ccc",
-    }
+    },
   },
   fullWidth: {
     width: "100% !important",
@@ -68,9 +68,19 @@ const useStyles = createUseStyles({
   },
 });
 
-const RenderFormSection = ({ section, attributes, dataElements, stageEvents, formValues, dataValues, eventId, getEnrollment }) => {
+const RenderFormSection = ({
+  section,
+  attributes,
+  dataElements,
+  stageEvents,
+  formValues,
+  dataValues,
+  eventId,
+  getEnrollment,
+}) => {
   const [saving, setSaving] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
+  const [stageValues, setStageValues] = useState([]);
 
   const classes = useStyles();
 
@@ -80,7 +90,7 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
 
   const [form] = Form.useForm();
 
-  const { createEvents,deleteEvents } = useEvents();
+  const { createEvents, deleteEvents } = useEvents();
 
   const isRepeatable =
     section?.stage?.repeatable &&
@@ -90,7 +100,9 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
 
   useEffect(() => {
     if (stageEvents?.length > 0) {
-      setInitialValues(formatDefaultValues(sectionEvents, section?.stage, isRepeatable));
+      const formatted = formatDefaultValues(sectionEvents, section?.stage, isRepeatable);
+      setInitialValues(formatted);
+      setStageValues(formatted);
     }
   }, [stageEvents]);
 
@@ -122,6 +134,11 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
     }
   };
 
+  const changeHandler = () => {
+    const values = form.getFieldsValue();
+    setStageValues(values);
+  };
+
   return (
     <>
       {initialValues &&
@@ -149,6 +166,8 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
                   return (
                     <div className={isRepeatable ? classes.formList : ""}>
                       {fields.map((field, index) => {
+                        let sectionvalues = stageValues[section?.stage?.stageId]?.[field.key];
+
                         return (
                           <div key={field.key} className={classes.add}>
                             {section?.stage?.sections?.map((sectionItem) => {
@@ -159,10 +178,10 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
                                   )}
                                   {sectionItem.elements?.map((dataElement) => {
                                     const shouldShow =
-                                      !dataElement.showif || evaluateShowIf(dataElement.showif, formValues || dataValues);
+                                      !dataElement.showif || evaluateShowIf(dataElement.showif, sectionvalues || {});
 
                                     if (!shouldShow) {
-                                      form.setFieldValue(dataElement.id, null);
+                                      form.setFieldValue([section?.stage?.stageId, field.key, dataElement.id], null);
                                     }
                                     return (
                                       shouldShow && (
@@ -181,7 +200,7 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
                                               {
                                                 ...formatAttributes(attributes),
                                                 ...formatDataValues(stageEvents),
-                                                ...(formValues || dataValues),
+                                                ...(sectionvalues || {}),
                                               },
                                               [...dataElements, ...attributes]
                                             ),
@@ -193,6 +212,7 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, for
                                             type={dataElement.options ? "SELECT" : dataElement.valueType}
                                             options={dataElement?.options}
                                             placeholder={`Enter ${dataElement.name}`}
+                                            onChange={changeHandler}
                                             name={[field.name, dataElement.id]}
                                             {...(dataElement.disablefuturedate
                                               ? {

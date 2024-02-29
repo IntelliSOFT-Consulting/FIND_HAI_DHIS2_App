@@ -17,6 +17,16 @@ const useStyles = createUseStyles({
       width: "100% !important",
     },
   },
+  submitButton: {
+    margin: "1rem",
+    backgroundColor: "#026C26 !important",
+    color: "white",
+    borderColor: "#026C26 !important",
+    "&:hover": {
+      backgroundColor: "#026C26 !important",
+      color: "white !important",
+    },
+  },
 });
 
 export default function Symptoms({ stage, events, program, orgUnit, trackedEntityInstance, event }) {
@@ -201,7 +211,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
                   );
                 })}
                 <Form.Item>
-                  <Button type='primary' htmlType="submit" disabled={saving} loading={saving}>
+                  <Button className={classes.submitButton} type='primary' htmlType="submit" disabled={saving} loading={saving}>
                     Save
                   </Button>
                 </Form.Item>
