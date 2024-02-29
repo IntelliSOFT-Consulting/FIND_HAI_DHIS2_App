@@ -1,12 +1,18 @@
 import InputItem from "./InputItem";
 import React, { useEffect, useState } from "react";
+import { Form, Button, Divider, message } from "antd";
 import { createUseStyles } from "react-jss";
-import { evaluateShowIf } from "../lib/helpers";
+import { evaluateShowIf, formatAttributes, formatDataValues, toTitleCase } from "../lib/helpers";
 import { useSelector } from "react-redux";
 import { evaluateValidations } from "../lib/helpers";
 import dayjs from "dayjs";
 import weekday from "dayjs/plugin/weekday";
 import localeData from "dayjs/plugin/localeData";
+import Accordion from "./Accordion";
+import { formatDefaultValues, formatSubmissions } from "../lib/formFormatter";
+import useEvents from "../hooks/useEvents";
+import { useParams } from "react-router-dom";
+import Symptoms from "./Symptoms";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -46,6 +52,10 @@ const useStyles = createUseStyles({
     border: "1px dashed #ccc",
     padding: "1rem",
     borderRadius: "5px",
+    '& >div:not(:first-child)': {
+      marginTop: "1rem",
+      borderTop: "1px solid #ccc",
+    }
   },
   fullWidth: {
     width: "100% !important",
@@ -58,122 +68,174 @@ const useStyles = createUseStyles({
   },
 });
 
-const RenderFormSection = ({ section, Form, form, saveValue, events }) => {
-  const [formValues, setFormValues] = useState({});
-  const [warnings, setWarnings] = useState(null);
+const RenderFormSection = ({ section, attributes, dataElements, stageEvents, formValues, dataValues, eventId }) => {
+  const [saving, setSaving] = useState(false);
+  const [initialValues, setInitialValues] = useState(null);
+
   const classes = useStyles();
 
-  const attributes = useSelector((state) => state.attributes);
-  const dataElements = useSelector((state) => state.dataElements);
+  const { program } = useSelector((state) => state.forms);
+  const { trackedEntityInstance, enrollment } = useParams();
+  const { id } = useSelector((state) => state.orgUnit);
 
-  const setInitialValues = async () => {
-    const values = {};
-    for (const dataElement of section?.dataElements) {
-      values[dataElement.id] = dataElement.value;
-    }
-    setFormValues(values);
-  };
+  const [form] = Form.useForm();
+
+  const { createEvents,deleteEvents } = useEvents();
+
+  const isRepeatable =
+    section?.stage?.repeatable &&
+    !section?.stage?.sections?.some((section) => section?.elements?.some((element) => element?.multiple));
+
+  const sectionEvents = stageEvents?.filter((event) => event?.programStage === section?.stage?.stageId);
 
   useEffect(() => {
-    setInitialValues();
-  }, []);
-
-  const eventsValues = events?.flatMap((event) => {
-    const values = {};
-    for (const dataValue of event?.dataValues) {
-      values[dataValue.dataElement] = dataValue.value;
+    if (stageEvents?.length > 0) {
+      setInitialValues(formatDefaultValues(sectionEvents, section?.stage, isRepeatable));
     }
-    return values;
-  });
+  }, [stageEvents]);
 
-  // format eventsValues as one object
-  const eventsData = events?.reduce((acc, curr) => {
-    const values = {};
-    for (const dataValue of curr?.dataValues) {
-      values[dataValue.dataElement] = dataValue.value;
+  const handleSubmit = async (values) => {
+    setSaving(true);
+    try {
+      let createEventsPayload = formatSubmissions(values, section?.stage, sectionEvents, {
+        enrollment,
+        orgUnit: id,
+        program,
+        trackedEntityInstance,
+      });
+
+      if (sectionEvents?.length > createEventsPayload?.length) {
+        const eventsToDelete = sectionEvents.slice(createEventsPayload.length);
+        createEventsPayload = createEventsPayload.slice(0, sectionEvents.length);
+        await deleteEvents(eventsToDelete);
+      }
+
+      const response = await createEvents(createEventsPayload);
+      if (response) {
+        message.success("Form submitted successfully");
+        setSaving(false);
+      }
+    } catch (error) {
+      message.error("Form submission failed");
+      setSaving(false);
     }
-    return {
-      ...acc,
-      ...values,
-    };
-  }, {});
+  };
 
   return (
-    <div className={`${classes.form} ${form.repeatable ? classes.formList + " " + classes.fullWidth : ""}`}>
-      {section.dataElements.map((dataElement, index) => {
-        const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
+    <>
+      {initialValues &&
+        (section?.stage?.title === "Symptoms" ? (
+          <Symptoms
+            stage={section}
+            events={stageEvents}
+            program={program}
+            orgUnit={id}
+            trackedEntityInstance={trackedEntityInstance}
+            event={eventId}
+          />
+        ) : (
+          <Form
+            className={`${classes.form} ${classes.fullWidth}`}
+            form={form}
+            layout="vertical"
+            initialValues={initialValues || {}}
+            onFinish={handleSubmit}
+            autoComplete="off"
+          >
+            <Accordion title={toTitleCase(section?.stage?.title)} key={section.id} open={true}>
+              <Form.List name={section?.stage?.stageId}>
+                {(fields, { add, remove }) => {
+                  return (
+                    <div className={isRepeatable ? classes.formList : ""}>
+                      {fields.map((field, index) => {
+                        return (
+                          <div key={field.key} className={classes.add}>
+                            {section?.stage?.sections?.map((sectionItem) => {
+                              return (
+                                <>
+                                  {sectionItem.sectionName !== section?.stage?.title && sectionItem.sectionName?.trim() && (
+                                    <Divider orientation="left">{toTitleCase(sectionItem.sectionName)}</Divider>
+                                  )}
+                                  {sectionItem.elements?.map((dataElement) => {
+                                    const shouldShow =
+                                      !dataElement.showif || evaluateShowIf(dataElement.showif, formValues || dataValues);
 
-        const attributeValues = attributes?.reduce((acc, curr) => {
-          return {
-            ...acc,
-            [curr?.id]: curr?.value,
-          };
-        }, {});
-
-        return (
-          shouldShow && (
-            <Form.Item
-              key={index}
-              label={dataElement.name}
-              name={dataElement.id}
-              rules={[
-                {
-                  required: dataElement.required,
-                  message: `Please input ${dataElement.name}!`,
-                },
-                ...evaluateValidations(dataElement.validator, dataElement, { ...eventsData, ...attributeValues }, dataElements),
-              ]}
-            >
-              <InputItem
-                type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
-                options={dataElement.optionSet?.options?.map((option) => ({
-                  label: option.name,
-                  value: option.code,
-                }))}
-                name={dataElement.id}
-                placeholder={dataElement.name}
-                status={warnings?.id === dataElement.id ? "error" : null}
-                onChange={async (e) => {
-                  const value = e?.target ? e.target.value : e;
-                  if (
-                    dataElement.name === "Preoperative Antibiotic Prophylaxis" ||
-                    dataElement.name === "Postoperative Antibiotic Prophylaxis"
-                  ) {
-                    const existingValue = eventsValues?.find(
-                      (eventValue) => eventValue[dataElement.id] === value && !value?.toString()?.toLowerCase()?.includes("other")
-                    );
-                    if (existingValue) {
-                      setWarnings({
-                        id: dataElement.id,
-                        message: `${value} already exists in another section. Please check your data.`,
-                      });
-                      form.setFieldValue(dataElement.id, null);
-                    } else {
-                      setWarnings(null);
-                      await saveValue(value, dataElement, section);
-                    }
-                  } else {
-                    await saveValue(value, dataElement, section);
-                  }
-
-                  setFormValues(form.getFieldsValue());
+                                    if (!shouldShow) {
+                                      form.setFieldValue(dataElement.id, null);
+                                    }
+                                    return (
+                                      shouldShow && (
+                                        <Form.Item
+                                          key={dataElement.id}
+                                          label={dataElement.name}
+                                          name={[field.name, dataElement.id]}
+                                          rules={[
+                                            {
+                                              required: dataElement.required,
+                                              message: `${dataElement.name} is required.`,
+                                            },
+                                            ...evaluateValidations(
+                                              dataElement.validator,
+                                              dataElement,
+                                              {
+                                                ...formatAttributes(attributes),
+                                                ...formatDataValues(stageEvents),
+                                                ...(formValues || dataValues),
+                                              },
+                                              [...dataElements, ...attributes]
+                                            ),
+                                          ]}
+                                          className={sectionItem.elements.length === 1 ? classes.fullWidth : null}
+                                          hidden={dataElement.name === "Symptom presence"}
+                                        >
+                                          <InputItem
+                                            type={dataElement.options ? "SELECT" : dataElement.valueType}
+                                            options={dataElement?.options}
+                                            placeholder={`Enter ${dataElement.name}`}
+                                            name={[field.name, dataElement.id]}
+                                            {...(dataElement.disablefuturedate
+                                              ? {
+                                                  disabledDate: (current) => {
+                                                    return current && current > dayjs().endOf("day");
+                                                  },
+                                                }
+                                              : {})}
+                                            {...(dataElement.multiple ? { mode: "multiple" } : {})}
+                                          />
+                                        </Form.Item>
+                                      )
+                                    );
+                                  })}
+                                </>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                      {isRepeatable && (
+                        <Button
+                          type="dashed"
+                          onClick={() => {
+                            add();
+                          }}
+                          style={{ width: "60%" }}
+                        >
+                          Add
+                        </Button>
+                      )}
+                    </div>
+                  );
                 }}
-                {...(dataElement.disablefuturedate
-                  ? {
-                      disabledDate: (current) => {
-                        return current && current > dayjs().endOf("day");
-                      },
-                    }
-                  : {})}
-              />
-              {warnings?.id === dataElement.id && (
-                <div style={{ color: "red", fontSize: "0.8rem", marginTop: "0.5rem" }}>{warnings?.message}</div>
-              )}
-            </Form.Item>
-          )
-        );
-      })}
-    </div>
+              </Form.List>
+              <div className={classes.buttonsContainer}>
+                <Button loading={saving} className={classes.submitButton} htmlType="submit">
+                  Save
+                </Button>
+              </div>
+            </Accordion>
+          </Form>
+        ))}
+    </>
   );
 };
 

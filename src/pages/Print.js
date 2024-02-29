@@ -100,7 +100,7 @@ const Print = () => {
           const stageForm = stages?.find((stageItem) => stageItem.stageId === item.programStage);
           const stageValues = await filterAndSortEvents(data.events, item.programStage, stageForm, item.event);
           if (stageValues) {
-            const columns = createColumns(stageForm, stageValues);
+            const columns = createColumns(stageForm.stage, stageValues);
             return (
               <React.Fragment key={item.programStage}>
                 <div className={classes.mainSection}>
@@ -161,7 +161,7 @@ const Print = () => {
   }, [state, location, stages]);
 
   const createColumns = (formData, data) => {
-    return [...formData?.sections]?.map((section) => {
+    return [...formData?.sections?.map(item=>item.stage.sections)]?.map((section) => {
       const sectionData = data?.filter((item) => item?.programStage === (section?.stageId || section.programStage));
       const sectionValues = sectionData?.flatMap((item) =>
         item?.dataValues?.reduce((acc, curr) => {

@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
-import { Button, Form } from "antd";
-import CardItem from "../components/CardItem";
-import Section from "../components/Section";
+import { Button, Card, Form, message } from "antd";
 import InputItem from "../components/InputItem";
 import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
 import ErrorModal from "../components/ErrorModal";
 import { useNavigate } from "react-router-dom";
-import { evaluateShowIf, generateId } from "../lib/helpers";
+import { evaluateShowIf, evaluateValidations, generateId } from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
 import useGetProgramInstances from "../hooks/useInstances";
-import { evaluateValidations } from "../lib/helpers";
 import { formatValue } from "../lib/mapValues";
+import Accordion from "../components/Accordion";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
 
 const useStyles = createUseStyles({
+  '@global': {
+    '.ant-card': {
+      backgroundColor: '#fafbfc',
+    },
+  },
   form: {
     display: "flex",
     justifyContent: "space-between",
@@ -82,7 +85,7 @@ export default function Register() {
     }
   };
 
-  const dataElements = registration?.sections?.flatMap((section) => {
+  const dataElements = registration?.flatMap((section) => {
     return section?.dataElements?.map((dataElement) => ({
       id: dataElement.id,
       name: dataElement.name,
@@ -138,6 +141,7 @@ export default function Register() {
     } catch (error) {
       const conflicts = getConflicts(error?.details, registration);
       setError(conflicts);
+      message.error("Error registering patient");
       setLoading(false);
     }
   };
@@ -211,11 +215,12 @@ export default function Register() {
     }) || [];
 
   return (
-    <CardItem title="REGISTER NEW PATIENT SURGERY">
+    <Card title='Register Patient'>
       <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-        {registration?.sections?.map((section) => (
+        {registration?.map((section) => (
           <>
-            <Section key={section.title} title={section.title} />
+            <Accordion title={section.sectionName} open={true}>
+
             <div className={classes.form}>
               {section?.dataElements?.map((dataElement) => {
                 const rules = [
@@ -229,11 +234,8 @@ export default function Register() {
                 return shouldShow ? (
                   <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
                     <InputItem
-                      type={dataElement.optionSet ? "SELECT" : dataElement.valueType}
-                      options={dataElement.optionSet?.options?.map((option) => ({
-                        label: option.name,
-                        value: option.code,
-                      }))}
+                      type={dataElement.options ? "SELECT" : dataElement.valueType}
+                      options={dataElement.options}
                       placeholder={`Enter ${dataElement.name}`}
                       name={dataElement.id}
                       onChange={(e) => {
@@ -257,6 +259,7 @@ export default function Register() {
                 ) : null;
               })}
             </div>
+            </Accordion>
           </>
         ))}
         <Button type="primary" htmlType="submit" loading={loading} disabled={loading}>
@@ -272,6 +275,6 @@ export default function Register() {
           values={formValues}
         />
       )}
-    </CardItem>
+    </Card>
   );
 }

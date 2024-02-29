@@ -2,9 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { createUseStyles } from "react-jss";
-import { Button, DatePicker, Input, Select, Space, Table, Tag } from "antd";
+import { Button, DatePicker, Input, Select, Space, Spin, Table, Tag } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import { CircularLoader } from "@dhis2/ui";
 import moment from "moment";
 import CardItem from "../components/CardItem";
 import { debounce, generateWeeks, isValidDate } from "../lib/helpers";
@@ -159,11 +158,8 @@ export default function Surgeries() {
           options={weeks}
         />
       </div>
-      {!instances ? (
-        <div style={{ textAlign: "center" }}>
-          <CircularLoader />
-        </div>
-      ) : (
+
+      <Spin spinning={!instances} tip="Loading...">
         <Table
           columns={columns}
           dataSource={
@@ -197,7 +193,7 @@ export default function Surgeries() {
             ),
           }}
         />
-      )}
+      </Spin>
     </CardItem>
   );
 }

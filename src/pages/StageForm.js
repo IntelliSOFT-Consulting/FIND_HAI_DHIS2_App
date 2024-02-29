@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Breadcrumb, Spin } from "antd";
+import { Breadcrumb, Spin, Card } from "antd";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import useInstances from "../hooks/useInstances";
@@ -21,6 +21,11 @@ dayjs.extend(weekday);
 dayjs.extend(localeData);
 
 const useStyles = createUseStyles({
+  "@global": {
+    ".ant-card": {
+      backgroundColor: "#fafbfc",
+    },
+  },
   header: {
     display: "flex",
     justifyContent: "space-between",
@@ -40,7 +45,6 @@ const useStyles = createUseStyles({
   },
   stage: {
     marginBottom: "1rem",
-    border: "1px solid rgba(0,0,0,0.5)",
     borderRadius: "5px",
   },
 });
@@ -108,12 +112,9 @@ export default function StageForm() {
       dispatch(setAttributes(attributes));
       setEnrollmentData(data);
       const stageValues = await filterAndSortEvents(data.events);
-      setStageEvents(stageValues)
+      setStageEvents(stageValues);
       if (stageValues?.length > 0 && stageForm) {
-        const dataForm = formatForm(
-          stageForm,
-          stageValues
-        );
+        const dataForm = formatForm(stageForm, stageValues);
         setDataValues(dataForm);
       }
     }
@@ -121,8 +122,7 @@ export default function StageForm() {
 
   const filterAndSortEvents = async (events) => {
     const mappings = await getData("repeatSections", "postOperative");
-    const repeatIds = [...new Set(stageForm?.sections?.map((section) => section?.stageId))];
-
+    const repeatIds = [...new Set(stageForm?.sections?.map((section) => section?.stage?.stageId))];
 
     const filteredEvents = events?.filter((event) => {
       if (queryParams.event) {
@@ -163,12 +163,10 @@ export default function StageForm() {
           },
         ]}
       />
-      <CardItem title={stageForm?.title}>
-        {!dataValues || !stageForm ? (
-          <CircularLoader />
-        ) : (
-          <Spin spinning={loading}>
-            <div className={classes.stage}>
+      <Card title={stageForm?.title} size="small">
+        <Spin spinning={!dataValues || !stageForm}>
+          <div className={classes.stage}>
+            {dataValues && stageForm && (
               <Stage
                 getEnrollment={getEnrollment}
                 enrollmentData={enrollmentData}
@@ -179,11 +177,12 @@ export default function StageForm() {
                 stageForm={stageForm}
                 stageEvents={stageEvents}
               />
-            </div>
-          </Spin>
-        )}
+            )}
+          </div>
+        </Spin>
+
         {success && <Alert success>{success}</Alert>}
-      </CardItem>
+      </Card>
     </div>
   );
 }
