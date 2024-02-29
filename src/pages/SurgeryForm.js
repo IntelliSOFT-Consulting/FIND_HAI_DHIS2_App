@@ -255,7 +255,7 @@ export default function SurgeryForm() {
 
     let params = "";
 
-    const isRepeat = stage?.repeatable && stage.multiple;
+    const isRepeat = stage.multiple;
     if (emptyEvent && !isNew) {
       params = isRepeat ? `?event=${emptyEvent}` : "";
       return navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
