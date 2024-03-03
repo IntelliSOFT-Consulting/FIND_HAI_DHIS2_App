@@ -13,6 +13,7 @@ import { formatDefaultValues, formatSubmissions } from "../lib/formFormatter";
 import useEvents from "../hooks/useEvents";
 import { useParams } from "react-router-dom";
 import Symptoms from "./Symptoms";
+import { evaluateRiskFactors } from "../lib/validations";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -183,6 +184,7 @@ const RenderFormSection = ({
                                     if (!shouldShow) {
                                       form.setFieldValue([section?.stage?.stageId, field.key, dataElement.id], null);
                                     }
+
                                     return (
                                       shouldShow && (
                                         <Form.Item
@@ -203,6 +205,10 @@ const RenderFormSection = ({
                                                 ...(sectionvalues || {}),
                                               },
                                               [...dataElements, ...attributes]
+                                            ),
+                                            ...evaluateRiskFactors(
+                                              dataElement?.name?.toLowerCase() === "risk factors",
+                                              attributes
                                             ),
                                           ]}
                                           className={sectionItem.elements.length === 1 ? classes.fullWidth : null}

@@ -73,7 +73,6 @@ export const formatSubmissions = (formValues, stage, stageEvents, metaData) => {
   const valuesArray = formValues[Object.keys(formValues)[0]];
   const allSubmissions = [];
   const dataElements = stage?.sections?.reduce((acc, curr) => [...acc, ...curr?.elements], []);
-
   valuesArray?.forEach((values, valueIndex) => {
     const formattedSubmissions = dataElements
       ?.filter((dataElement) => values[dataElement?.id] !== undefined)
@@ -85,11 +84,23 @@ export const formatSubmissions = (formValues, stage, stageEvents, metaData) => {
       }));
 
     const multipleValues = formattedSubmissions?.filter((submission) => submission?.multiple);
-    const submissions =
-      multipleValues?.length > 0
-        ? handleMultipleValues(multipleValues, stageEvents, metaData)
-        : handleSingleValues(formattedSubmissions, stageEvents, metaData, stage, valueIndex);
+    const singleValues = formattedSubmissions?.filter((submission) => !submission?.multiple);
+    const multipleSubmissions = multipleValues?.length > 0 ? handleMultipleValues(multipleValues, stageEvents, metaData) : [];
+    let singleSubmissions =
+      singleValues?.length > 0 ? handleSingleValues(formattedSubmissions, stageEvents, metaData, stage, valueIndex) : [];
 
+    if (multipleSubmissions.length > 0 && singleSubmissions.length > 0) {
+      const otherIndex = multipleSubmissions.findIndex((event) =>
+        event.dataValues.some((value) => value.value?.toLowerCase()?.includes("other"))
+      );
+      const selectedIndex = otherIndex === -1 ? 0 : otherIndex;
+      multipleSubmissions[selectedIndex].dataValues = [
+        ...multipleSubmissions[selectedIndex].dataValues,
+        ...singleSubmissions[0].dataValues?.filter((value) => !Array.isArray(value.value)),
+      ];
+      singleSubmissions = [];
+    }
+    const submissions = [...multipleSubmissions, ...singleSubmissions];
     allSubmissions.push(submissions);
   });
 
@@ -108,6 +119,10 @@ export const formatDefaultValues = (stageEvents, stageForm, repeatable = false) 
   const multipleDataElements = allDataElements?.filter((dataElement) => dataElement?.multiple);
   const singleDataElements = allDataElements?.filter((dataElement) => !dataElement?.multiple);
 
+  const otherIndex = stageEvents.findIndex((event) =>
+    event.dataValues.some((value) => value.value?.toLowerCase()?.includes("other"))
+  );
+
   if (repeatable) {
     multipleDataElements?.forEach((dataElement) => {
       const values = stageEvents
@@ -125,13 +140,13 @@ export const formatDefaultValues = (stageEvents, stageForm, repeatable = false) 
       stageEvents?.forEach((event, index) => {
         const value = event?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value;
 
-        if (defaultValues[stageForm?.stageId][index]) {
-          defaultValues[stageForm?.stageId][index] = {
-            ...defaultValues[stageForm?.stageId][index],
+        if (defaultValues[stageForm?.stageId][otherIndex]) {
+          defaultValues[stageForm?.stageId][otherIndex] = {
+            ...defaultValues[stageForm?.stageId][otherIndex],
             [dataElement?.id]: formatValue(value),
           };
         } else {
-          defaultValues[stageForm?.stageId][index] = {
+          defaultValues[stageForm?.stageId][0] = {
             [dataElement?.id]: formatValue(value),
           };
         }
@@ -160,8 +175,8 @@ export const formatDefaultValues = (stageEvents, stageForm, repeatable = false) 
 
     singleDataElements?.forEach((dataElement) => {
       const value = stageEvents
-        ?.find((event) => event?.programStage === stageForm?.stageId)
-        ?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value;
+        ?.flatMap((event) => event?.dataValues)
+        ?.find((value) => value?.dataElement === dataElement?.id)?.value;
 
       if (defaultValues[stageForm?.stageId]?.length) {
         defaultValues[stageForm?.stageId] = [
