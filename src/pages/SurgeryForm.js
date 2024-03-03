@@ -449,7 +449,7 @@ export default function SurgeryForm() {
                             )
                         )}
 
-                    {stage?.multiple && getFullEvents(enrollmentData, stage)?.events?.length < 3 && (
+                    {stage?.multiple && (
                       <div className={classes.newEvent}>
                         <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
                           Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Review"}

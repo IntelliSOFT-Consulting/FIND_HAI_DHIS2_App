@@ -143,7 +143,7 @@ export default function UseInstances() {
       endDate = dates[1];
       query = "";
     }
-    const dataElementIds = registration?.sections?.flatMap((section) => {
+    const dataElementIds = registration?.flatMap((section) => {
       return section?.dataElements?.filter((dataElement) => {
         return dataElement?.name === "Secondary ID" || dataElement?.name === "Patient ID";
       });
