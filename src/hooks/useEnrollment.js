@@ -17,7 +17,7 @@ export default function UseEnrollment() {
           status: "ACTIVE",
         },
       });
-      return response;
+      return response?.importSummaries[0]?.reference;
     } catch (error) {
       console.log("error", error);
     }

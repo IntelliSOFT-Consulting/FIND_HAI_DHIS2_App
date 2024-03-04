@@ -230,5 +230,36 @@ export default function UseInstances() {
     });
   };
 
-  return { findPatientInstance, getEnrollmentData, getInstanceValues, getProgramValues, searchPatient, getSurgeries };
+  const getTrackedEntityInstance = async (tei) => {
+    try {
+      const { trackedEntityInstances } = await engine.query({
+        trackedEntityInstances: {
+          resource: `trackedEntityInstances/${tei}`,
+          params: {
+            fields: "*",
+          },
+        },
+      });
+
+      return trackedEntityInstances;
+    } catch (error) {
+      console.log("error", error);
+    }
+  }
+
+  const saveTrackedEntityInstance = async (tei, data) => {
+    try {
+      const { response } = await engine.mutate({
+        resource: `trackedEntityInstances/${tei}`,
+        type: "update",
+        data: data,
+      });
+
+      return response;
+    } catch (error) {
+      console.log("error", error);
+    }
+  }
+
+  return { findPatientInstance, getEnrollmentData, getInstanceValues, getProgramValues, searchPatient, getSurgeries, getTrackedEntityInstance, saveTrackedEntityInstance};
 }

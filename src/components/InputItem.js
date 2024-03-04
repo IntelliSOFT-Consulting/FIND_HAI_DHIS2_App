@@ -14,7 +14,7 @@ export default function InputItem({ type, name, ...props }) {
           </Radio.Group>
         );
       case "SELECT":
-        return <Select showSearch name={name} {...props} />;
+        return <Select showSearch allowClear name={name} {...props} />;
       case "NUMBER" || "INTEGER":
         return (
           <InputNumber

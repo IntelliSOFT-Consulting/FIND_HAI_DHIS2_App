@@ -363,7 +363,10 @@ export default function SurgeryForm() {
           ]}
         />
         <Badge.Ribbon
-          text={enrollmentData?.status === "ACTIVE" ? "ACTIVE" : enrollmentData?.status === "COMPLETED" ? "COMPLETED" : "CLOSED"}
+          text={
+            enrollmentData?.status &&
+            (enrollmentData?.status === "ACTIVE" ? "ACTIVE" : enrollmentData?.status === "COMPLETED" ? "COMPLETED" : "CLOSED")
+          }
           color={statusColor(enrollmentData?.status)}
         >
           <Card>

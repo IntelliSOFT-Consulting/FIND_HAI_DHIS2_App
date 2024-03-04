@@ -1,28 +1,18 @@
-import React, { useState } from "react";
-import { Button, Form, Divider } from "antd";
+import React, { useState, useEffect } from "react";
+import { Form } from "antd";
 import { createUseStyles } from "react-jss";
 import { useNavigate } from "react-router-dom";
 import UseDataStore from "../hooks/useDataStore";
 import useEnrollment from "../hooks/useEnrollment";
-import InputItem from "./InputItem";
 import useEvents from "../hooks/useEvents";
-import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues } from "../lib/helpers";
-import Accordion from "./Accordion";
-
-import {
-  getNonRepeatingEvents,
-  getRepeatingEvents,
-  getRepeatingValues,
-  getSectionEvents,
-  getSectionMappings,
-  getUpdatedEvents,
-} from "../lib/stageHelpers";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 import weekday from "dayjs/plugin/weekday";
 import localeData from "dayjs/plugin/localeData";
 import UseInstances from "../hooks/useInstances";
 import RenderFormSection from "./RenderFormSection";
+import * as constants from "../contants/ids";
+import { formatValue } from "../lib/mapValues";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -82,36 +72,48 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Stage({
-  dataValues,
-  setDataValues,
-  stageForm,
-  surgeryLink,
-  enrollmentData,
-  getEnrollment,
-  eventId,
-  stageEvents,
-}) {
+export default function Stage({ dataValues, stageForm, getEnrollment, eventId, stageEvents, enrollmentData }) {
   const [formValues, setFormValues] = useState(null);
   const [error, setError] = useState(null);
-  const [preFilled, setPreFilled] = useState({});
+  const [sampleId, setSampleId] = useState(null);
+  const [signOfInfection, setSignOfInfection] = useState(null);
+  const [cultureFindings, setCultureFindings] = useState(null);
 
   const [form] = Form.useForm();
   const classes = useStyles();
 
-  const navigate = useNavigate();
-
-  const { getEnrollmentData } = UseInstances();
-
   const attributes = useSelector((state) => state.attributes);
   const dataElements = useSelector((state) => state.dataElements);
 
-  const { getData, saveData } = UseDataStore();
-  const { updateEnrollment } = useEnrollment();
+  const populateSampleId = (events) => {
+    const sampleDataId = constants.dataElements.sampleId;
+    const signOfInfectionId = constants.dataElements.signOfInfection;
+    const cultureFindingsId = constants.dataElements.cultureFindings;
+    const sampleEvent = events.find((event) => event?.dataValues.find((dataValue) => dataValue.dataElement === sampleDataId));
+    const signOfInfectionEvent = events?.find((event) => event?.dataValues.find((dataValue) => dataValue.dataElement === signOfInfectionId));
+    const cultureFindingsEvent = events?.find((event) => event?.dataValues.find((dataValue) => dataValue.dataElement === cultureFindingsId));
 
-  const { createEvents, deleteEvents } = useEvents();
+    if (signOfInfectionEvent) {
+      const signOfInfectionData = signOfInfectionEvent.dataValues.find((dataValue) => dataValue.dataElement === signOfInfectionId);
+      setSignOfInfection(formatValue(signOfInfectionData.value));
+    }
 
-  const handleSubmit = async () => {};
+    if (sampleEvent) {
+      const sampleData = sampleEvent.dataValues.find((dataValue) => dataValue.dataElement === sampleDataId);
+      setSampleId(sampleData.value);
+    }
+
+    if (cultureFindingsEvent) {
+      const cultureFindingsData = cultureFindingsEvent.dataValues.find((dataValue) => dataValue.dataElement === cultureFindingsId);
+      setCultureFindings(formatValue(cultureFindingsData.value));
+    }
+  };
+
+  useEffect(() => {
+    if (stageEvents) {
+      populateSampleId(stageEvents);
+    }
+  }, [stageEvents]);
 
   return (
     <div className={`${classes.form} ${classes.fullWidth}`}>
@@ -123,11 +125,14 @@ export default function Stage({
             dataElements={dataElements}
             attributes={attributes}
             stageEvents={stageEvents}
-            formValues={ formValues }
+            formValues={formValues}
             dataValues={dataValues}
             stageForm={stageForm}
             eventId={eventId}
             getEnrollment={getEnrollment}
+            sampleId={sampleId}
+            signOfInfection={signOfInfection}
+            cultureFindings={cultureFindings}
           />
         );
       })}

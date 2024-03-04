@@ -169,7 +169,6 @@ export default function StageForm() {
                 eventId={queryParams.event}
                 stageForm={stageForm}
                 stageEvents={stageEvents}
-                getEnrollment={getEnrollment}
               />
             )}
           </div>

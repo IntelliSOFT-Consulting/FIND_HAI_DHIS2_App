@@ -7,6 +7,8 @@ export const evaluateRiskFactors = (isRiskFactors, attributes) => {
         validator: (_, value) => {
           if (age?.value >= 75 && !value.includes("Age > 75 yrs")) {
             return Promise.reject("This patient is over 75 years old. Please select 'Age > 75 yrs'.");
+          } else if (age?.value < 75 && value.includes("Age > 75 yrs")) {
+            return Promise.reject("This patient is under 75 years old. Please deselect 'Age > 75 yrs'.");
           }
           if (value.includes("Healthy person") && value.length > 1) {
             return Promise.reject("Healthy person cannot have any other risk factors.");
@@ -28,7 +30,7 @@ export const disableDuplicateProphylaxis = (field) => {
           const section = Object.keys(allValues);
           const valuesArray = allValues[section[0]]?.map((item) => item[field.id])?.filter((item) => item !== undefined);
 
-          if (valuesArray?.filter((item) => item === value).length > 1) {
+          if (valuesArray?.filter((item) => !item?.toLowerCase().includes("other") && item === value).length > 1) {
             return Promise.reject("This prophylaxis has already been selected.");
           }
           return Promise.resolve();

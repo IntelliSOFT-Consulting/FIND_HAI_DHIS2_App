@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
 import useGetProgramInstances from "../hooks/useInstances";
+import useEnrollment from "../hooks/useEnrollment";
 import { formatValue } from "../lib/mapValues";
 import Accordion from "../components/Accordion";
 
@@ -49,6 +50,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const { searchPatient, getEnrollmentData, findPatientInstance } = useGetProgramInstances();
+  const {createEnrollment} = useEnrollment();
 
   const getConflicts = (error, registration) => {
     const importSummaries = error?.response?.importSummaries;
@@ -116,14 +118,7 @@ export default function Register() {
           attribute: key,
           value: values[key],
         })),
-        enrollments: [
-          {
-            orgUnit: id,
-            program,
-            enrollmentDate: new Date(),
-            incidentDate: new Date(),
-          },
-        ],
+
       };
 
       const { response } = await engine.mutate({
@@ -133,8 +128,8 @@ export default function Register() {
       });
 
       if (response?.status === "SUCCESS") {
-        const trackedEntityInstance = await getEnrollmentData(response?.importSummaries[0]?.reference, true);
-        navigate(`/surgery/${response?.importSummaries[0]?.reference}/${trackedEntityInstance?.enrollment}`);
+        const enrollmentId = await createEnrollment(response?.importSummaries[0]?.reference, program, id);
+        navigate(`/surgery/${response?.importSummaries[0]?.reference}/${enrollmentId}`);
       }
     } catch (error) {
       const conflicts = getConflicts(error?.details, registration);

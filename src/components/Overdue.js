@@ -36,8 +36,6 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
     </div>
   );
 
-  console.log("outcome", outcome);
-
   return (
     <Modal
       open={overdue || discontinue}

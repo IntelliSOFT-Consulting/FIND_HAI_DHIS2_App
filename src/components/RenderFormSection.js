@@ -14,6 +14,9 @@ import useEvents from "../hooks/useEvents";
 import { useParams } from "react-router-dom";
 import Symptoms from "./Symptoms";
 import { disableDuplicateProphylaxis, evaluateRiskFactors } from "../lib/validations";
+import useInstances from "../hooks/useInstances";
+import * as constants from "../contants/ids";
+import { DeleteTwoTone } from "@ant-design/icons";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -66,10 +69,35 @@ const useStyles = createUseStyles({
   },
   add: {
     padding: "1rem",
+    position: "relative",
+  },
+  relative: {
+    position: "relative",
+  },
+  remove: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    border: "1px solid #f81d22",
+    borderRadius: "5px",
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    backgroundColor: "#ffeeeb",
+    borderTop: "none",
   },
 });
 
-const RenderFormSection = ({ section, attributes, dataElements, stageEvents, eventId, getEnrollment }) => {
+const RenderFormSection = ({
+  section,
+  attributes,
+  dataElements,
+  stageEvents,
+  eventId,
+  getEnrollment,
+  sampleId,
+  signOfInfection,
+  cultureFindings,
+}) => {
   const [saving, setSaving] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
   const [stageValues, setStageValues] = useState([]);
@@ -84,9 +112,12 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, eve
 
   const { createEvents, deleteEvents } = useEvents();
 
+  const { getTrackedEntityInstance, saveTrackedEntityInstance } = useInstances();
+
   const isRepeatable =
     section?.stage?.repeatable &&
-    !section?.stage?.sections?.some((section) => section?.elements?.some((element) => element?.multiple));
+    !section?.stage?.sections?.some((section) => section?.elements?.some((element) => element?.multiple)) &&
+    ![constants.stages.ssi, constants.stages.postOperative].includes(section?.stage?.stageId);
 
   const sectionEvents = stageEvents?.filter((event) => event?.programStage === section?.stage?.stageId);
 
@@ -115,12 +146,59 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, eve
       }
 
       const response = await createEvents(createEventsPayload);
+
+      const dateOfEventId = constants.attributes.dateOfEvent;
+      const signOfInfectionId = constants.dataElements.signOfInfection;
+      const infectionPresentAtSurgeryId = constants.dataElements.infectionPresentAtSurgery;
+      const dateOfWoundCheckupId = constants.dataElements.dateOfWoundCheckup;
+
       if (response) {
+        const instance = await getTrackedEntityInstance(trackedEntityInstance);
         message.success("Form submitted successfully");
         await getEnrollment();
+
+        const events = instance?.enrollments?.flatMap((enrollment) => {
+          return enrollment?.events;
+        });
+
+        const posOperativeEvents = events?.filter((event) => event?.programStage === constants.stages.postOperative);
+
+        const infectionPresentAtSurgery = posOperativeEvents?.filter((item) => {
+          return (
+            item?.dataValues?.find((dataValue) => dataValue?.dataElement === infectionPresentAtSurgeryId)?.value === "false" &&
+            item?.dataValues?.find((dataValue) => dataValue?.dataElement === signOfInfectionId)?.value === "true" &&
+            item?.dataValues?.find((dataValue) => dataValue?.dataElement === dateOfWoundCheckupId)?.value
+          );
+        });
+
+        if (infectionPresentAtSurgery?.length > 0) {
+          const dataValues = infectionPresentAtSurgery?.map((event) => event.dataValues).flat(Infinity);
+          const dateOfWoundCheckup = dataValues
+            ?.filter((val) => val.dataElement === dateOfWoundCheckupId)
+            .map((val) => new Date(val.value));
+
+          const earliestDateOfWoundCheckup = dateOfWoundCheckup?.sort((a, b) => a - b)[0];
+
+          if (earliestDateOfWoundCheckup) {
+            const updatedInstance = {
+              ...instance,
+              attributes: [
+                ...instance?.attributes,
+                {
+                  attribute: dateOfEventId,
+                  value: earliestDateOfWoundCheckup,
+                },
+              ],
+            };
+
+            await saveTrackedEntityInstance(trackedEntityInstance, updatedInstance);
+          }
+        }
+
         setSaving(false);
       }
     } catch (error) {
+      console.log("error", error);
       message.error("Form submission failed");
       setSaving(false);
     }
@@ -131,10 +209,14 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, eve
     setStageValues(values);
   };
 
+  const noGrowth =
+    section?.stage?.stageId !== constants.stages.ast ||
+    (cultureFindings?.toLowerCase() !== "no growth" && section?.stage?.stageId === constants.stages.ast);
+
   return (
     <>
       {initialValues &&
-        (section?.stage?.title === "Symptoms" ? (
+        (section?.stage?.title === "Symptoms" && signOfInfection ? (
           <Symptoms
             stage={section}
             events={stageEvents}
@@ -144,115 +226,139 @@ const RenderFormSection = ({ section, attributes, dataElements, stageEvents, eve
             event={eventId}
           />
         ) : (
-          <Form
-            className={`${classes.form} ${classes.fullWidth}`}
-            form={form}
-            layout="vertical"
-            initialValues={initialValues || {}}
-            onFinish={handleSubmit}
-            autoComplete="off"
-          >
-            <Accordion title={toTitleCase(section?.stage?.title)} key={section.id} open={true}>
-              <Form.List name={section?.stage?.stageId}>
-                {(fields, { add, remove }) => {
-                  return (
-                    <div className={isRepeatable ? classes.formList : ""}>
-                      {fields.map((field, index) => {
-                        let sectionvalues = stageValues[section?.stage?.stageId]?.[field.key];
+          section?.stage?.title !== "Symptoms" &&
+          noGrowth && (
+            <Form
+              className={`${classes.form} ${classes.fullWidth}`}
+              form={form}
+              layout="vertical"
+              initialValues={initialValues || {}}
+              onFinish={handleSubmit}
+              autoComplete="off"
+            >
+              <Accordion title={toTitleCase(section?.stage?.title)} key={section.id} open={true}>
+                <Form.List name={section?.stage?.stageId}>
+                  {(fields, { add, remove }) => {
+                    return (
+                      <div className={isRepeatable ? classes.formList : classes.relative}>
+                        {fields.map(({ name, key, ...restField }) => {
+                          let sectionvalues = stageValues[section?.stage?.stageId]?.[key];
 
-                        return (
-                          <div key={field.key} className={classes.add}>
-                            {section?.stage?.sections?.map((sectionItem) => {
-                              return (
-                                <>
-                                  {sectionItem.sectionName !== section?.stage?.title && sectionItem.sectionName?.trim() && (
-                                    <Divider orientation="left">{toTitleCase(sectionItem.sectionName)}</Divider>
-                                  )}
-                                  {sectionItem.elements?.map((dataElement) => {
-                                    const shouldShow =
-                                      !dataElement.showif || evaluateShowIf(dataElement.showif, sectionvalues || {});
+                          return (
+                            <div key={name} className={classes.add}>
+                              {name > 0 && (
+                                <Button
+                                  type="link"
+                                  className={classes.remove}
+                                  onClick={() => remove(name)}
+                                  icon={<DeleteTwoTone twoToneColor="#f81d22" />}
+                                  danger
+                                />
+                              )}
+                              {section?.stage?.sections?.map((sectionItem) => {
+                                const showInfectionInfo =
+                                  constants.sections.infectionInformation !== sectionItem.id ||
+                                  (constants.sections.infectionInformation === sectionItem.id &&
+                                    sectionvalues?.[constants.dataElements.signOfInfection]);
+                                return (
+                                  showInfectionInfo && (
+                                    <div key={sectionItem.id}>
+                                      {sectionItem.sectionName !== section?.stage?.title && sectionItem.sectionName?.trim() && (
+                                        <Divider orientation="left">{toTitleCase(sectionItem.sectionName)}</Divider>
+                                      )}
+                                      {sectionItem.elements?.map((dataElement) => {
+                                        const shouldShow =
+                                          !dataElement.showif || evaluateShowIf(dataElement.showif, sectionvalues || {});
 
-                                    if (!shouldShow) {
-                                      form.setFieldValue([section?.stage?.stageId, field.key, dataElement.id], null);
-                                    }
+                                        if (!shouldShow) {
+                                          form.setFieldValue([section?.stage?.stageId, key, dataElement.id], null);
+                                        }
 
-                                    return (
-                                      shouldShow && (
-                                        <Form.Item
-                                          key={dataElement.id}
-                                          label={dataElement.name}
-                                          name={[field.name, dataElement.id]}
-                                          rules={[
-                                            {
-                                              required: dataElement.required && shouldShow,
-                                              message: `${dataElement.name} is required.`,
-                                            },
-                                            ...evaluateValidations(
-                                              dataElement.validator,
-                                              dataElement,
-                                              {
-                                                ...formatAttributes(attributes),
-                                                ...formatDataValues(stageEvents),
-                                                ...(sectionvalues || {}),
-                                              },
-                                              [...dataElements, ...attributes]
-                                            ),
-                                            ...evaluateRiskFactors(
-                                              dataElement?.name?.toLowerCase() === "risk factors",
-                                              attributes
-                                            ),
-                                            ...disableDuplicateProphylaxis(dataElement),
-                                          ]}
-                                          className={sectionItem.elements.length === 1 ? classes.fullWidth : null}
-                                          hidden={dataElement.name === "Symptom presence"}
-                                        >
-                                          <InputItem
-                                            type={dataElement.options ? "SELECT" : dataElement.valueType}
-                                            options={dataElement?.options}
-                                            placeholder={`Enter ${dataElement.name}`}
-                                            onChange={changeHandler}
-                                            name={[field.name, dataElement.id]}
-                                            {...(dataElement.disablefuturedate
-                                              ? {
-                                                  disabledDate: (current) => {
-                                                    return current && current > dayjs().endOf("day");
+                                        return (
+                                          shouldShow && (
+                                            <Form.Item
+                                              {...restField}
+                                              key={dataElement.id}
+                                              label={dataElement.name}
+                                              name={[name, dataElement.id]}
+                                              rules={[
+                                                {
+                                                  required: dataElement.required && shouldShow,
+                                                  message: `${dataElement.name} is required.`,
+                                                },
+                                                ...evaluateValidations(
+                                                  dataElement.validator,
+                                                  dataElement,
+                                                  {
+                                                    ...formatAttributes(attributes),
+                                                    ...formatDataValues(stageEvents),
+                                                    ...(sectionvalues || {}),
                                                   },
-                                                }
-                                              : {})}
-                                            {...(dataElement.multiple ? { mode: "multiple" } : {})}
-                                          />
-                                        </Form.Item>
-                                      )
-                                    );
-                                  })}
-                                </>
-                              );
-                            })}
-                          </div>
-                        );
-                      })}
-                      {isRepeatable && (
-                        <Button
-                          type="dashed"
-                          onClick={() => {
-                            add();
-                          }}
-                          style={{ width: "60%" }}
-                        >
-                          Add
-                        </Button>
-                      )}
-                    </div>
-                  );
-                }}
-              </Form.List>
-              <div className={classes.buttonsContainer}>
-                <Button loading={saving} className={classes.submitButton} htmlType="submit">
-                  Save
-                </Button>
-              </div>
-            </Accordion>
-          </Form>
+                                                  [...dataElements, ...attributes]
+                                                ),
+                                                ...evaluateRiskFactors(
+                                                  dataElement?.name?.toLowerCase() === "risk factors",
+                                                  attributes
+                                                ),
+                                                ...disableDuplicateProphylaxis(dataElement),
+                                              ]}
+                                              className={sectionItem.elements.length === 1 ? classes.fullWidth : null}
+                                              hidden={dataElement.name === "Symptom presence"}
+                                            >
+                                              <InputItem
+                                                type={dataElement.options ? "SELECT" : dataElement.valueType}
+                                                options={dataElement?.options}
+                                                placeholder={`Enter ${dataElement.name}`}
+                                                onChange={changeHandler}
+                                                name={[name, dataElement.id]}
+                                                {...(section?.stage?.stageId === constants.stages.ast &&
+                                                sampleId &&
+                                                dataElement.id === constants.dataElements.sampleId
+                                                  ? { defaultValue: sampleId }
+                                                  : {})}
+                                                {...(dataElement.disablefuturedate
+                                                  ? {
+                                                      disabledDate: (current) => {
+                                                        return current && current > dayjs().endOf("day");
+                                                      },
+                                                    }
+                                                  : {})}
+                                                {...(dataElement.multiple ? { mode: "multiple" } : {})}
+                                              />
+                                            </Form.Item>
+                                          )
+                                        );
+                                      })}
+                                    </div>
+                                  )
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                        {isRepeatable && (
+                          <Button
+                            type="dashed"
+                            onClick={() => {
+                              add();
+                            }}
+                            style={{ width: "60%" }}
+                          >
+                            Add
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  }}
+                </Form.List>
+                <div className={classes.buttonsContainer}>
+                  <Button loading={saving} className={classes.submitButton} htmlType="submit">
+                    Save
+                  </Button>
+                </div>
+              </Accordion>
+            </Form>
+          )
         ))}
     </>
   );
