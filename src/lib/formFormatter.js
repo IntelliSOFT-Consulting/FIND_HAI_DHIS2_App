@@ -119,10 +119,6 @@ export const formatDefaultValues = (stageEvents, stageForm, repeatable = false) 
   const multipleDataElements = allDataElements?.filter((dataElement) => dataElement?.multiple);
   const singleDataElements = allDataElements?.filter((dataElement) => !dataElement?.multiple);
 
-  const otherIndex = stageEvents.findIndex((event) =>
-    event.dataValues.some((value) => value.value?.toLowerCase()?.includes("other"))
-  );
-
   if (repeatable) {
     multipleDataElements?.forEach((dataElement) => {
       const values = stageEvents
@@ -136,22 +132,23 @@ export const formatDefaultValues = (stageEvents, stageForm, repeatable = false) 
       });
     });
 
-    singleDataElements?.forEach((dataElement) => {
-      stageEvents?.forEach((event, index) => {
-        const value = event?.dataValues?.find((value) => value?.dataElement === dataElement?.id)?.value;
-
-        if (defaultValues[stageForm?.stageId][otherIndex]) {
-          defaultValues[stageForm?.stageId][otherIndex] = {
-            ...defaultValues[stageForm?.stageId][otherIndex],
-            [dataElement?.id]: formatValue(value),
-          };
-        } else {
-          defaultValues[stageForm?.stageId][0] = {
-            [dataElement?.id]: formatValue(value),
-          };
-        }
+    const eventsWithSingleValues = stageEvents.filter((event) => {
+      return event?.dataValues?.some((value) => {
+        return singleDataElements?.some((dataElement) => dataElement?.id === value?.dataElement);
       });
     });
+
+    const singleDefaultValues = eventsWithSingleValues.map((event) => {
+      return singleDataElements?.reduce((acc, curr) => {
+        const value = event?.dataValues?.find((value) => value?.dataElement === curr?.id)?.value;
+        return {
+          ...acc,
+          [curr?.id]: formatValue(value),
+        };
+      }, {});
+    });
+
+    defaultValues[stageForm?.stageId] = [...defaultValues[stageForm?.stageId], ...singleDefaultValues];
   } else {
     multipleDataElements?.forEach((dataElement) => {
       const values = stageEvents

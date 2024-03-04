@@ -69,16 +69,7 @@ const useStyles = createUseStyles({
   },
 });
 
-const RenderFormSection = ({
-  section,
-  attributes,
-  dataElements,
-  stageEvents,
-  formValues,
-  dataValues,
-  eventId,
-  getEnrollment,
-}) => {
+const RenderFormSection = ({ section, attributes, dataElements, stageEvents, eventId, getEnrollment }) => {
   const [saving, setSaving] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
   const [stageValues, setStageValues] = useState([]);
