@@ -13,7 +13,7 @@ import { formatDefaultValues, formatSubmissions } from "../lib/formFormatter";
 import useEvents from "../hooks/useEvents";
 import { useParams } from "react-router-dom";
 import Symptoms from "./Symptoms";
-import { evaluateRiskFactors } from "../lib/validations";
+import { disableDuplicateProphylaxis, evaluateRiskFactors } from "../lib/validations";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -193,7 +193,7 @@ const RenderFormSection = ({
                                           name={[field.name, dataElement.id]}
                                           rules={[
                                             {
-                                              required: dataElement.required,
+                                              required: dataElement.required && shouldShow,
                                               message: `${dataElement.name} is required.`,
                                             },
                                             ...evaluateValidations(
@@ -210,6 +210,7 @@ const RenderFormSection = ({
                                               dataElement?.name?.toLowerCase() === "risk factors",
                                               attributes
                                             ),
+                                            ...disableDuplicateProphylaxis(dataElement),
                                           ]}
                                           className={sectionItem.elements.length === 1 ? classes.fullWidth : null}
                                           hidden={dataElement.name === "Symptom presence"}

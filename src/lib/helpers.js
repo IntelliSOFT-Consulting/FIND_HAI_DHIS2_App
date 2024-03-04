@@ -1,4 +1,5 @@
 import { format } from "date-fns";
+import { formatValue } from "./mapValues";
 
 export function tableDataToObject(tableData) {
   const headers = tableData.headers.map((header) => ({
@@ -36,7 +37,7 @@ export const formatAttributeValues = (attributes) => {
   return attributes.reduce((acc, attributeValue) => {
     const key = attributeValue?.attribute?.name?.toLowerCase();
     if (key) {
-      acc[key] = attributeValue.value;
+      acc[key] = formatValue(attributeValue.value);
     }
     return acc;
   }, {});
