@@ -2,6 +2,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 import { format } from "date-fns";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { message } from "antd";
 
 export default function UseEvents() {
   const engine = useDataEngine();
@@ -29,7 +30,7 @@ export default function UseEvents() {
 
       return response;
     } catch (error) {
-      console.log(error);
+      message.error("Error completing event");
     }
   };
 
@@ -56,7 +57,7 @@ export default function UseEvents() {
         return response;
       }
     } catch (error) {
-      console.log(error);
+      message.error("Error completing all events");
     }
   };
 
@@ -83,7 +84,7 @@ export default function UseEvents() {
         return response;
       }
     } catch (error) {
-      console.log(error);
+      message.error("Error activating all events");
     }
   };
 
@@ -109,6 +110,7 @@ export default function UseEvents() {
       });
       return response?.importSummaries[0]?.reference;
     } catch (error) {
+      message.error("Error creating event");
       return error?.details?.response?.importSummaries[0]?.description;
     }
   };
@@ -133,6 +135,7 @@ export default function UseEvents() {
       });
       return response?.importSummaries?.map((summary) => summary?.reference);
     } catch (error) {
+      message.error("Error creating event");
       return error?.details?.response?.importSummaries[0]?.description;
     }
   };
@@ -167,6 +170,7 @@ export default function UseEvents() {
 
       return response;
     } catch (error) {
+      message.error("Error updating event");
       console.log(error);
     }
   };
@@ -188,6 +192,7 @@ export default function UseEvents() {
         })),
       };
     } catch (error) {
+      message.error("Error getting event");
       console.log(error);
     }
   };
@@ -207,6 +212,7 @@ export default function UseEvents() {
 
       return response?.importSummaries?.map((summary) => summary?.reference);
     } catch (error) {
+      message.error("Error creating events");
       console.log(error);
     }
   };
@@ -226,6 +232,7 @@ export default function UseEvents() {
 
       return response;
     } catch (error) {
+      message.error("Error deleting events");
       console.log(error);
     }
   };
