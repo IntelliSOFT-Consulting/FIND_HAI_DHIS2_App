@@ -16,6 +16,7 @@ export const stages = {
   ssi: 'ifncEH9ZQwB',
   ast: 'ZyS6cUwNlJu',
   postOperative: 'IbB9QEgQU6D',
+  outcome: 'fUBig6bjwdL',
 }
 
 export const sections = {

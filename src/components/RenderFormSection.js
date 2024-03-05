@@ -11,7 +11,7 @@ import localeData from "dayjs/plugin/localeData";
 import Accordion from "./Accordion";
 import { formatDefaultValues, formatSubmissions } from "../lib/formFormatter";
 import useEvents from "../hooks/useEvents";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Symptoms from "./Symptoms";
 import { disableDuplicateProphylaxis, evaluateRiskFactors } from "../lib/validations";
 import useInstances from "../hooks/useInstances";
@@ -97,12 +97,14 @@ const RenderFormSection = ({
   sampleId,
   signOfInfection,
   cultureFindings,
+  surgeryLink,
 }) => {
   const [saving, setSaving] = useState(false);
   const [initialValues, setInitialValues] = useState(null);
   const [stageValues, setStageValues] = useState([]);
 
   const classes = useStyles();
+  const navigate = useNavigate();
 
   const { program } = useSelector((state) => state.forms);
   const { trackedEntityInstance, enrollment } = useParams();
@@ -193,6 +195,25 @@ const RenderFormSection = ({
 
             await saveTrackedEntityInstance(trackedEntityInstance, updatedInstance);
           }
+        }
+        if (section?.stage?.stageId === constants.stages.outcome) {
+          const completedInstance = {
+            ...instance,
+            enrollments: instance?.enrollments.map((enrollment) => {
+              return {
+                ...enrollment,
+                status: "COMPLETED",
+                events: enrollment.events?.map((event) => {
+                  return {
+                    ...event,
+                    status: "COMPLETED",
+                  };
+                }),
+              };
+            }),
+          };
+          await saveTrackedEntityInstance(trackedEntityInstance, completedInstance);
+          navigate(surgeryLink);
         }
 
         setSaving(false);

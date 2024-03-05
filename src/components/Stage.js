@@ -72,7 +72,7 @@ const useStyles = createUseStyles({
   },
 });
 
-export default function Stage({ dataValues, stageForm, getEnrollment, eventId, stageEvents, enrollmentData }) {
+export default function Stage({ dataValues, stageForm, getEnrollment, eventId, stageEvents, surgeryLink }) {
   const [formValues, setFormValues] = useState(null);
   const [error, setError] = useState(null);
   const [sampleId, setSampleId] = useState(null);
@@ -133,6 +133,7 @@ export default function Stage({ dataValues, stageForm, getEnrollment, eventId, s
             sampleId={sampleId}
             signOfInfection={signOfInfection}
             cultureFindings={cultureFindings}
+            surgeryLink={surgeryLink}
           />
         );
       })}
