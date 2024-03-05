@@ -454,7 +454,7 @@ export default function SurgeryForm() {
 
                     {stage?.multiple && (
                       <div className={classes.newEvent}>
-                        <Button onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
+                        <Button disabled={isDisabled} onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
                           Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Review"}
                         </Button>
                       </div>

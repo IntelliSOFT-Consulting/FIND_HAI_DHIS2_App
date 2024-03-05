@@ -64,6 +64,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
   }, [stage, events]);
 
   const handleLoadDefaults = async (events) => {
+    setLoading(true);
     const mappings = await getData("repeatSections", "postOperative");
     const symptoms = mappings?.filter((item) => event === item?.parentEvent);
     setAllMappings(mappings);
@@ -124,9 +125,13 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
       dataIndex: "present",
       key: "present",
       render: (text, record) => (
-        <Radio.Group value={
-          selectedSymptoms.find((symptom) => symptom[dataElements.symptoms] === record.key)?.[dataElements.symptomPresence]
-        } name="xS5SzaMlRUu" onChange={(e) => handlePresentChange(e, record.key)}>
+        <Radio.Group
+          value={
+            selectedSymptoms.find((symptom) => symptom[dataElements.symptoms] === record.key)?.[dataElements.symptomPresence]
+          }
+          name="xS5SzaMlRUu"
+          onChange={(e) => handlePresentChange(e, record.key)}
+        >
           <Radio value={true}>Yes</Radio>
           <Radio value={false}>No</Radio>
         </Radio.Group>
@@ -149,9 +154,6 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
       }
       return data;
     });
-
-
-
 
     if (currentSymptoms.length > 1) {
       const payload = currentSymptoms.map((event, index) => {
@@ -178,7 +180,6 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
       const newMappings = savedEvents?.map((id) => {
         return { parentEvent: event, event: id };
       });
-
 
       const updatedMappings = [...allMappings, ...newMappings];
       await saveData("repeatSections", "postOperative", updatedMappings);
@@ -207,6 +208,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
                       columns={columns}
                       pagination={false}
                       showHeader={false}
+                      loading={loading}
                     />
                   ) : (
                     <Form.Item
@@ -220,7 +222,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
                   );
                 })}
                 <Form.Item>
-                  <Button className={classes.submitButton} type='primary' htmlType="submit" disabled={saving} loading={saving}>
+                  <Button className={classes.submitButton} type="primary" htmlType="submit" disabled={saving} loading={saving}>
                     Save
                   </Button>
                 </Form.Item>

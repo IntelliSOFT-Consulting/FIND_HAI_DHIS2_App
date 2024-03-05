@@ -295,6 +295,15 @@ const RenderFormSection = ({
                                           form.setFieldValue([section?.stage?.stageId, key, dataElement.id], null);
                                         }
 
+                                        const isSampleId =
+                                          section?.stage?.stageId === constants.stages.ast &&
+                                          sampleId &&
+                                          dataElement.id === constants.dataElements.sampleId;
+
+                                        if (isSampleId) {
+                                          form.setFieldValue([section?.stage?.stageId, key, dataElement.id], sampleId);
+                                        }
+
                                         return (
                                           shouldShow && (
                                             <Form.Item
@@ -332,11 +341,6 @@ const RenderFormSection = ({
                                                 placeholder={`Enter ${dataElement.name}`}
                                                 onChange={changeHandler}
                                                 name={[name, dataElement.id]}
-                                                {...(section?.stage?.stageId === constants.stages.ast &&
-                                                sampleId &&
-                                                dataElement.id === constants.dataElements.sampleId
-                                                  ? { defaultValue: sampleId }
-                                                  : {})}
                                                 {...(dataElement.disablefuturedate
                                                   ? {
                                                       disabledDate: (current) => {
