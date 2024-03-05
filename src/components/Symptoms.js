@@ -34,6 +34,8 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
   const [currentSymptoms, setCurrentSymptoms] = useState([]);
   const [eventMapping, setEventMapping] = useState([]);
   const [allMappings, setAllMappings] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [saving, setSaving] = useState(false);
   const [form] = Form.useForm();
 
@@ -91,6 +93,8 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
         ]);
       }
     });
+
+    setLoading(false);
   };
 
   const handlePresentChange = (e, value) => {
@@ -146,7 +150,10 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
       return data;
     });
 
-    if (currentSymptoms.length > 0) {
+
+
+
+    if (currentSymptoms.length > 1) {
       const payload = currentSymptoms.map((event, index) => {
         return {
           ...event,
@@ -155,8 +162,10 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
       });
       await createEvents(payload);
     } else {
-      const payload = dataValues.map((dataValue) => {
+      const payload = dataValues.map((dataValue, i) => {
+        const existing = { ...currentSymptoms[i] } ? { ...currentSymptoms[i] } : {};
         return {
+          ...existing,
           program,
           programStage: stages.symptoms,
           orgUnit,
