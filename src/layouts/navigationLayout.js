@@ -22,6 +22,11 @@ const styles = createUseStyles({
     ".ant-layout-sider": {
       position: "fixed",
       background: "white !important",
+      '@media (min-width: 992px)': {
+        position: "fixed !important",
+        height: "calc(100vh - 48px) !important",
+        zIndex: "1000 !important",
+      }
     },
     ".ant-layout-sider-zero-width-trigger": {
       background: "#2C6693 !important",
@@ -43,6 +48,10 @@ const styles = createUseStyles({
     // backgroundColor: "#FAFAFA",
     minHeight: "calc(100vh - 48px)",
     width: "100%",
+    '@media (min-width: 992px)': {
+      marginLeft: "200px",
+      width: "calc(100% - 200px)",
+    }
   },
 });
 
