@@ -1,7 +1,7 @@
 import { useDataEngine } from "@dhis2/app-runtime";
 import { useParams } from "react-router-dom";
 import { setProgramValues } from "../redux/actions";
-import { notification } from "antd";
+import { message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 
 export default function UseInstances() {
@@ -32,7 +32,7 @@ export default function UseInstances() {
       });
       return trackedEntityInstances?.trackedEntityInstances[0];
     } catch (error) {
-      console.log("error", error);
+      message.error("Error finding patient");
     }
   };
 
@@ -54,7 +54,7 @@ export default function UseInstances() {
 
       return userEnrollments;
     } catch (error) {
-      console.log("error", error);
+      message.error("Error getting enrollment data");
     }
   };
 
@@ -89,10 +89,7 @@ export default function UseInstances() {
 
       dispatch(setProgramValues(datas));
     } catch (error) {
-      notification.error({
-        message: "Error",
-        description: "Something went wrong",
-      });
+      message.error("Error getting instance values");
     }
   };
 
@@ -106,6 +103,7 @@ export default function UseInstances() {
 
       return { events };
     } catch (error) {
+      message.error("Error getting program values");
       return { error };
     }
   };
@@ -130,7 +128,7 @@ export default function UseInstances() {
         attributes: item.attributes,
       }));
     } catch (err) {
-      console.log(err);
+      message.error("Error searching patient");
     }
   };
 
@@ -243,7 +241,7 @@ export default function UseInstances() {
 
       return trackedEntityInstances;
     } catch (error) {
-      console.log("error", error);
+      message.error("Error getting tracked entity instance");
     }
   }
 
@@ -257,7 +255,7 @@ export default function UseInstances() {
 
       return response;
     } catch (error) {
-      console.log("error", error);
+      message.error("Error saving tracked entity instance");
     }
   }
 

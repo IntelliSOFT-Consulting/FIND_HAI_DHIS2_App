@@ -1,4 +1,6 @@
 import { useDataEngine } from "@dhis2/app-runtime";
+import { format } from "date-fns";
+import { message } from 'antd';
 
 export default function UseEnrollment() {
   const engine = useDataEngine();
@@ -12,14 +14,14 @@ export default function UseEnrollment() {
           trackedEntityInstance: patientId,
           program,
           orgUnit,
-          enrollmentDate: new Date().toISOString(),
-          incidentDate: new Date().toISOString(),
+          enrollmentDate: format(new Date(), "yyyy-MM-dd"),
+          incidentDate: format(new Date(), "yyyy-MM-dd"),
           status: "ACTIVE",
         },
       });
       return response?.importSummaries[0]?.reference;
     } catch (error) {
-      console.log("error", error);
+      message.error("Error creating enrollment");
     }
   };
 
@@ -35,7 +37,7 @@ export default function UseEnrollment() {
 
       return response;
     } catch (error) {
-      console.log(error);
+      message.error("Error updating enrollment");
     }
   };
 
