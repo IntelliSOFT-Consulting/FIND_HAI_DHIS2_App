@@ -40,3 +40,19 @@ export const disableDuplicateProphylaxis = (field) => {
   }
   return [];
 };
+
+export const disableNoneOption = (field) => {
+  if (field?.options && field.multiple) {
+    return [
+      {
+        validator: (_, value) => {
+          if (value.includes("None given") && value.length > 1) {
+            return Promise.reject("None given cannot be selected with other options.");
+          }
+          return Promise.resolve();
+        },
+      },
+    ];
+  }
+  return [];
+};

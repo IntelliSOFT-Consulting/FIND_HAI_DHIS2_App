@@ -13,7 +13,7 @@ import { formatDefaultValues, formatSubmissions } from "../lib/formFormatter";
 import useEvents from "../hooks/useEvents";
 import { useParams, useNavigate } from "react-router-dom";
 import Symptoms from "./Symptoms";
-import { disableDuplicateProphylaxis, evaluateRiskFactors } from "../lib/validations";
+import { disableDuplicateProphylaxis, disableNoneOption, evaluateRiskFactors } from "../lib/validations";
 import useInstances from "../hooks/useInstances";
 import * as constants from "../contants/ids";
 import { DeleteTwoTone } from "@ant-design/icons";
@@ -331,6 +331,7 @@ const RenderFormSection = ({
                                                   attributes
                                                 ),
                                                 ...disableDuplicateProphylaxis(dataElement),
+                                                ...disableNoneOption(dataElement),
                                               ]}
                                               className={sectionItem.elements.length === 1 ? classes.fullWidth : null}
                                               hidden={dataElement.name === "Symptom presence"}
@@ -368,6 +369,8 @@ const RenderFormSection = ({
                               add();
                             }}
                             style={{ width: "60%" }}
+                            // disable if the previous section has a value of "None given"
+                            disabled={JSON.stringify(form.getFieldsValue()).includes("None given")}
                           >
                             Add
                           </Button>
