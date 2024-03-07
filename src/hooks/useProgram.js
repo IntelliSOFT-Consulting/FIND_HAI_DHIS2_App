@@ -23,5 +23,46 @@ export default function UseProgram() {
     return programs?.programs;
   };
 
-  return { getPrograms };
+  const getFeedback = async () => {
+    const query = {
+      feedback: {
+        resource: "programs",
+        params: {
+          filter: "name:ilike:feedback",
+          fields: "id,name,programStages[name,id,programStageSections[dataElements[*]]]",
+        },
+      },
+    };
+
+    const { feedback } = await engine.query(query);
+
+    const formatForm = (program) => {
+      const dataElements = program?.programStages[0]?.programStageSections[0]?.dataElements?.map((element) => {
+        const options = element?.optionSet?.options?.map((option) => {
+          return {
+            label: option?.displayName,
+            value: option?.code,
+          };
+        });
+        return {
+          id: element?.id,
+          name: element?.name,
+          description: element?.description,
+          valueType: element?.valueType,
+          options,
+        };
+      });
+
+      return {
+        id: program?.id,
+        name: program?.name,
+        stage: program?.programStages[0]?.id,
+        dataElements,
+      };
+    };
+
+    return formatForm(feedback?.programs[0]);
+  };
+
+  return { getPrograms, getFeedback};
 }

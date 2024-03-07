@@ -1,6 +1,6 @@
 import React from "react";
 import { createUseStyles } from "react-jss";
-import { ChartPieIcon, ArrowTopRightOnSquareIcon, Cog6ToothIcon } from "@heroicons/react/24/solid";
+import { ChartPieIcon, ArrowTopRightOnSquareIcon, Cog6ToothIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 
 const styles = createUseStyles({
@@ -86,7 +86,7 @@ export default function Home() {
       title: "CONFIGURATIONS",
       path: `${domain}/dhis-web-maintenance/index.html#/list/programSection/program`,
       icon: Cog6ToothIcon,
-    },
+    }
   ];
   const classes = styles();
 
@@ -115,6 +115,14 @@ export default function Home() {
             </div>
           </a>
         ))}
+        <Link to="/feedback" className={classes.linkItem}>
+          <div className={classes.iconSection}>
+            <PencilSquareIcon className={classes.icon} aria-hidden="true" />
+          </div>
+          <div className={classes.title}>
+            <span>FEEDBACK</span>
+          </div>
+        </Link>
       </div>
     </div>
   );

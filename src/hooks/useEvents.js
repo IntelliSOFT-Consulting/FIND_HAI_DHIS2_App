@@ -237,6 +237,52 @@ export default function UseEvents() {
     }
   };
 
+  const saveFeedback = async (event) => {
+    try {
+      const response = await engine.mutate({
+        resource: `tracker?async=false`,
+        type: "create",
+        data: event,
+      });
+
+      message.success("Feedback saved successfully");
+      return response;
+    } catch (error) {
+      message.error("Error saving feedback");
+      console.log(error);
+    }
+  };
+
+  const getFeedbacks = async (program, stage, user) => {
+    try {
+      const isSuperUser = user?.userRoles?.some((role) => role?.displayName === "Superuser");
+      const filter = isSuperUser
+        ? {}
+        : {
+            createdBy: user?.id,
+          };
+      const { events } = await engine.query({
+        events: {
+          resource: "tracker/events",
+          params: {
+            pageSize: 500,
+            ouMode: "ALL",
+            program,
+            programStage: stage,
+            order: "occurredAt:desc",
+            fields: "occurredAt,status,orgUnit,event,trackedEntityInstance,program,programStage,dataValues[dataElement,value]",
+            ...filter,
+          },
+        },
+      });
+
+      return events?.instances;
+    } catch (error) {
+      message.error("Error getting feedbacks");
+      console.log(error);
+    }
+  };
+
   return {
     completeEvent,
     completeAllEvents,
@@ -248,5 +294,7 @@ export default function UseEvents() {
     getEvent,
     createEvents,
     deleteEvents,
+    saveFeedback,
+    getFeedbacks,
   };
 }
