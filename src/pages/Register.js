@@ -14,6 +14,7 @@ import useGetProgramInstances from "../hooks/useInstances";
 import useEnrollment from "../hooks/useEnrollment";
 import { formatValue } from "../lib/mapValues";
 import Accordion from "../components/Accordion";
+import { fetchHmisPatient } from "../api/hmis";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -50,7 +51,7 @@ export default function Register() {
   const navigate = useNavigate();
 
   const { searchPatient, getEnrollmentData, findPatientInstance } = useGetProgramInstances();
-  const {createEnrollment} = useEnrollment();
+  const { createEnrollment } = useEnrollment();
 
   const getConflicts = (error, registration) => {
     const importSummaries = error?.response?.importSummaries;
@@ -118,7 +119,6 @@ export default function Register() {
           attribute: key,
           value: values[key],
         })),
-
       };
 
       const { response } = await engine.mutate({
@@ -150,37 +150,59 @@ export default function Register() {
     await register(values);
   };
 
-  const fetchDemographics = async (attribute, value) => {
+  const fetchDemographics = async (attribute, value, isLocal = false) => {
     try {
-      const patient = await findPatientInstance(attribute, value, id, program);
+      if (
+        (!isLocal && process.env.REACT_APP_HMIS_AUTH_TOKEN) ||
+        (!isLocal && process.env.REACT_APP_HMIS_USERNAME && process.env.REACT_APP_HMIS_PASSWORD)
+      ) {
+        let patient = await fetchHmisPatient(value);
+        if (patient) {
+          const currentSurgery =
+            patient?.surgeries?.find((surgery) => dayjs(surgery?.dateOfSurgery).isSame(dayjs(), "day")) || {};
+          patient = {
+            ...patient,
+            ...currentSurgery,
+          };
 
-      if (patient) {
-        const formattedAttributes = patient.attributes?.reduce((acc, attribute) => {
-          const exceptions = [
-            "Scheduling",
-            "Surgery Location",
-            "Surgical Procedure",
-            "Date of Surgery",
-            "Date of Admission",
-            "Age",
-            "Secondary ID",
-          ];
+          form.setFieldsValue(patient);
+        }
+      } else {
+        const patient = await findPatientInstance(attribute, value, id, program);
 
-          if (!exceptions.includes(attribute.displayName)) {
-            acc[attribute.attribute] = formatValue(attribute.value);
-            if (attribute.displayName?.toLowerCase() === "date of birth") {
-              const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
-              form.setFieldsValue({
-                [ageField?.id]: dayjs().diff(dayjs(attribute.value), "year"),
-              });
+        if (patient) {
+          const formattedAttributes = patient.attributes?.reduce((acc, attribute) => {
+            const exceptions = [
+              "Scheduling",
+              "Surgery Location",
+              "Surgical Procedure",
+              "Date of Surgery",
+              "Date of Admission",
+              "Age",
+              "Secondary ID",
+            ];
+
+            if (!exceptions.includes(attribute.displayName)) {
+              acc[attribute.attribute] = formatValue(attribute.value);
+              if (attribute.displayName?.toLowerCase() === "date of birth") {
+                const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
+                form.setFieldsValue({
+                  [ageField?.id]: dayjs().diff(dayjs(attribute.value), "year"),
+                });
+              }
             }
-          }
-          return acc;
-        }, {});
-        form.setFieldsValue(formattedAttributes);
+            return acc;
+          }, {});
+          form.setFieldsValue(formattedAttributes);
+        }
       }
     } catch (error) {
-      setError("Error fetching patient demographics");
+      console.log(error.message === "Failed to fetch patient data from HMIS");
+      if (error.message === "Failed to fetch patient data from HMIS") {
+        fetchDemographics(attribute, value, true);
+      } else {
+        setError("Error fetching patient demographics.");
+      }
     }
   };
 
