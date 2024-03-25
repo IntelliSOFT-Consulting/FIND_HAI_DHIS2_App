@@ -4,6 +4,7 @@ import {
   PieChartOutlined as ChartPieIcon,
   ArrowDownOutlined as ArrowDownRightIcon,
   SettingOutlined as Cog6ToothIcon,
+  FormOutlined
 } from "@ant-design/icons";
 import { Menu, Layout } from "antd";
 import { createUseStyles } from "react-jss";
@@ -77,6 +78,7 @@ const items = [
     null,
     "item"
   ),
+  getItem("Feedback", "/feedback", <FormOutlined />, null, "item"),
 ];
 const NavigationLayout = ({ user, program, organisationUnits }) => {
   const classes = styles();
