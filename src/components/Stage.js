@@ -121,7 +121,7 @@ export default function Stage({ dataValues, stageForm, getEnrollment, eventId, s
         return (
           <RenderFormSection
             section={section}
-            key={section.id}
+            key={index}
             dataElements={dataElements}
             attributes={attributes}
             stageEvents={stageEvents}

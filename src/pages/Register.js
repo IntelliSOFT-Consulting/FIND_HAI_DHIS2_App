@@ -145,8 +145,10 @@ export default function Register() {
     const patientEnrollments = await searchPatient(program, patientId?.id, values[patientId?.id]);
     if (patientEnrollments?.length > 0) {
       setEnrollments(patientEnrollments);
+      setLoading(false);
       return;
     }
+
     await register(values);
   };
 

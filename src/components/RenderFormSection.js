@@ -291,18 +291,10 @@ const RenderFormSection = ({
                                         const shouldShow =
                                           !dataElement.showif || evaluateShowIf(dataElement.showif, sectionvalues || {});
 
-                                        if (!shouldShow) {
-                                          form.setFieldValue([section?.stage?.stageId, key, dataElement.id], null);
-                                        }
-
                                         const isSampleId =
                                           section?.stage?.stageId === constants.stages.ast &&
                                           sampleId &&
                                           dataElement.id === constants.dataElements.sampleId;
-
-                                        if (isSampleId) {
-                                          form.setFieldValue([section?.stage?.stageId, key, dataElement.id], sampleId);
-                                        }
 
                                         return (
                                           shouldShow && (
@@ -324,17 +316,17 @@ const RenderFormSection = ({
                                                     ...formatDataValues(stageEvents),
                                                     ...(sectionvalues || {}),
                                                   },
-                                                  [...dataElements, ...attributes]
+                                                  [...dataElements, ...attributes],
                                                 ),
                                                 ...evaluateRiskFactors(
                                                   dataElement?.name?.toLowerCase() === "risk factors",
-                                                  attributes
+                                                  attributes,
                                                 ),
                                                 ...disableDuplicateProphylaxis(dataElement),
                                                 ...disableNoneOption(dataElement),
                                               ]}
                                               className={sectionItem.elements.length === 1 ? classes.fullWidth : null}
-                                              hidden={dataElement.name === "Symptom presence"}
+                                              hidden={dataElement.name === "Symptom presence" || !shouldShow}
                                             >
                                               <InputItem
                                                 type={dataElement.options ? "SELECT" : dataElement.valueType}
@@ -342,6 +334,8 @@ const RenderFormSection = ({
                                                 placeholder={`Enter ${dataElement.name}`}
                                                 onChange={changeHandler}
                                                 name={[name, dataElement.id]}
+                                                {...(!shouldShow ? { value: null } : {})}
+                                                {...(isSampleId ? { defaultValue: sampleId } : {})}
                                                 {...(dataElement.disablefuturedate
                                                   ? {
                                                       disabledDate: (current) => {
@@ -369,7 +363,6 @@ const RenderFormSection = ({
                               add();
                             }}
                             style={{ width: "60%" }}
-                            // disable if the previous section has a value of "None given"
                             disabled={JSON.stringify(form.getFieldsValue()).includes("None given")}
                           >
                             Add
