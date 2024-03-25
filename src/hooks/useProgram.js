@@ -29,7 +29,7 @@ export default function UseProgram() {
         resource: "programs",
         params: {
           filter: "name:ilike:feedback",
-          fields: "id,name,programStages[name,id,programStageSections[dataElements[*]]]",
+          fields: "id,name,programStages[name,id,programStageSections[name,id,dataElements[*,optionSet[options[displayName,code]]]]]",
         },
       },
     };
@@ -37,19 +37,25 @@ export default function UseProgram() {
     const { feedback } = await engine.query(query);
 
     const formatForm = (program) => {
-      const dataElements = program?.programStages[0]?.programStageSections[0]?.dataElements?.map((element) => {
-        const options = element?.optionSet?.options?.map((option) => {
-          return {
-            label: option?.displayName,
-            value: option?.code,
-          };
-        });
+      const sections = program?.programStages[0]?.programStageSections?.flatMap((section) => {
         return {
-          id: element?.id,
-          name: element?.name,
-          description: element?.description,
-          valueType: element?.valueType,
-          options,
+          id: section?.id,
+          name: section?.name,
+          dataElements: section.dataElements?.map((element) => {
+            const options = element?.optionSet?.options?.map((option) => {
+              return {
+                label: option?.displayName,
+                value: option?.code,
+              };
+            });
+            return {
+              id: element?.id,
+              name: element?.name,
+              description: element?.description,
+              valueType: element?.valueType,
+              options,
+            };
+          }),
         };
       });
 
@@ -57,12 +63,12 @@ export default function UseProgram() {
         id: program?.id,
         name: program?.name,
         stage: program?.programStages[0]?.id,
-        dataElements,
+        sections,
       };
     };
 
     return formatForm(feedback?.programs[0]);
   };
 
-  return { getPrograms, getFeedback};
+  return { getPrograms, getFeedback };
 }

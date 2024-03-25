@@ -36,6 +36,17 @@ export default function InputItem({ type, name, ...props }) {
             }}
           />
         );
+      case "FILE_RESOURCE":
+        return (
+          <input
+            type="file"
+            name={name}
+            {...props}
+            style={{
+              width: "100%",
+            }}
+          />
+        );
       default:
         return <Input name={name} {...props} />;
     }
