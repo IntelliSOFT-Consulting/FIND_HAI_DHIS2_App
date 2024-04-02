@@ -136,8 +136,9 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                     placeholder={dataElement.name}
                     disabled={
                       dataElement?.name?.toLowerCase()?.includes("age") ||
-                      dataElement?.name?.toLowerCase()?.includes("secondary id") ||
-                      dataElement?.name?.toLowerCase()?.includes("patient id")
+                      dataElement?.name?.toLowerCase()?.includes("secondary id")
+                      // ||
+                      // dataElement?.name?.toLowerCase()?.includes("patient id")
                     }
                     onChange={(e) => {
                       const name = e?.target?.name || dataElement.id;
