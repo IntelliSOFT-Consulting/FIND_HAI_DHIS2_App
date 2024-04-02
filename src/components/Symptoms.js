@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import { Button, Table, Radio, Form, message } from "antd";
 import Accordion from "./Accordion";
 import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues, toTitleCase } from "../lib/helpers";
@@ -191,9 +191,9 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
     <Form form={form} layout="vertical" className={classes.fullWidth} onFinish={onFinish}>
       {stage?.stage?.sections?.map((sectionItem) => {
         return (
-          <>
+          <Fragment key={sectionItem.id+ '-1'}>
             {sectionItem.sectionName !== stage?.title && sectionItem.sectionName?.trim() && (
-              <Accordion title={toTitleCase(sectionItem.sectionName)} key={sectionItem.id} open={true}>
+              <Accordion title={toTitleCase(sectionItem.sectionName)}  open={true}>
                 {sectionItem.elements?.map((dataElement) => {
                   return dataElement?.name === "Symptoms" ? (
                     <Table
@@ -228,7 +228,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
                 </Form.Item>
               </Accordion>
             )}
-          </>
+          </Fragment>
         );
       })}
     </Form>

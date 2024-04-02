@@ -134,6 +134,11 @@ const RenderFormSection = ({
   const handleSubmit = async (values) => {
     setSaving(true);
     try {
+      const dateOfEventId = constants.attributes.dateOfEvent;
+      const signOfInfectionId = constants.dataElements.signOfInfection;
+      const infectionPresentAtSurgeryId = constants.dataElements.infectionPresentAtSurgery;
+      const dateOfWoundCheckupId = constants.dataElements.dateOfWoundCheckup;
+
       let createEventsPayload = formatSubmissions(values, section?.stage, sectionEvents, {
         enrollment,
         orgUnit: id,
@@ -144,15 +149,22 @@ const RenderFormSection = ({
       if (sectionEvents?.length > createEventsPayload?.length) {
         const eventsToDelete = sectionEvents.slice(createEventsPayload.length);
         createEventsPayload = createEventsPayload.slice(0, sectionEvents.length);
+
         await deleteEvents(eventsToDelete);
       }
 
-      const response = await createEvents(createEventsPayload);
+      console.log("Sign of infection", values[signOfInfectionId]);
+      console.log("values", Object.values(values)?.[0]?.[0]);
 
-      const dateOfEventId = constants.attributes.dateOfEvent;
-      const signOfInfectionId = constants.dataElements.signOfInfection;
-      const infectionPresentAtSurgeryId = constants.dataElements.infectionPresentAtSurgery;
-      const dateOfWoundCheckupId = constants.dataElements.dateOfWoundCheckup;
+      if (Object.values(values)?.[0]?.[0]?.[signOfInfectionId] === false) {
+        const symptomEvents = stageEvents.filter((event) => event.programStage === constants.stages.symptoms);
+
+        if (symptomEvents) {
+          await deleteEvents(symptomEvents);
+        }
+      }
+
+      const response = await createEvents(createEventsPayload);
 
       if (response) {
         const instance = await getTrackedEntityInstance(trackedEntityInstance);
