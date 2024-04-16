@@ -1,5 +1,6 @@
 import React from "react";
 import { createUseStyles } from "react-jss";
+import { FileDoneOutlined } from "@ant-design/icons";
 import { ChartPieIcon, ArrowTopRightOnSquareIcon, Cog6ToothIcon, PencilSquareIcon } from "@heroicons/react/24/solid";
 import { Link } from "react-router-dom";
 
@@ -86,7 +87,7 @@ export default function Home() {
       title: "CONFIGURATIONS",
       path: `${domain}/dhis-web-maintenance/index.html#/list/programSection/program`,
       icon: Cog6ToothIcon,
-    }
+    },
   ];
   const classes = styles();
 
@@ -121,6 +122,20 @@ export default function Home() {
           </div>
           <div className={classes.title}>
             <span>FEEDBACK</span>
+          </div>
+        </Link>
+        <Link to="/manuals" className={classes.linkItem}>
+          <div className={classes.iconSection}>
+            <FileDoneOutlined
+              className={classes.icon}
+              style={{
+                fontSize: "2.5rem",
+              }}
+              aria-hidden="true"
+            />
+          </div>
+          <div className={classes.title}>
+            <span>MANUALS</span>
           </div>
         </Link>
       </div>

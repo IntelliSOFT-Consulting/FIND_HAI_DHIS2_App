@@ -5,6 +5,7 @@ import StageForm from "./pages/StageForm";
 import ViewStage from "./pages/ViewStage";
 import Print from "./pages/Print";
 import Feedback from "./pages/Feedback";
+import Manuals from "./pages/Manuals";
 
 const routes = [
   {
@@ -41,6 +42,10 @@ const routes = [
   {
     path: "/feedback",
     component: Feedback,
+  },
+  {
+    path: "/manuals",
+    component: Manuals,
   }
 ];
 
