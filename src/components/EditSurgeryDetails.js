@@ -5,7 +5,7 @@ import { useDataEngine } from "@dhis2/app-runtime";
 import InputItem from "./InputItem";
 import Section from "./Section";
 import { formatValue } from "../lib/mapValues";
-import { evaluateShowIf, evaluateValidations } from "../lib/helpers";
+import { calculateAges, evaluateShowIf, evaluateValidations, generateDateOfBirth } from "../lib/helpers";
 import dayjs from "dayjs";
 
 const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
@@ -54,11 +54,22 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
 
 
     const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
+    const yearsField = dataElements?.find((dataElement) => dataElement.name === "Age (Years)");
+    const monthsField = dataElements?.find((dataElement) => dataElement.name === "Age (Months)");
     if (name === dateOfBirthField?.id) {
-      const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
-      const age = dayjs().diff(dayjs(value), "year");
+      const age = calculateAges(dayjs(value).format("YYYY-MM-DD"));
       form.setFieldsValue({
-        [ageField?.id]: age,
+        [yearsField?.id]: age?.years,
+        [monthsField?.id]: age?.months,
+      });
+    }
+
+    if (name === yearsField?.id || name === monthsField?.id) {
+      const years = form.getFieldValue(yearsField?.id) || 0;
+      const months = form.getFieldValue(monthsField?.id) || 0;
+      const dateOfBirth = generateDateOfBirth({ years, months });
+      form.setFieldsValue({
+        [dateOfBirthField?.id]: dayjs(dateOfBirth),
       });
     }
   };
@@ -135,7 +146,6 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                     options={dataElement.options}
                     placeholder={dataElement.name}
                     disabled={
-                      dataElement?.name?.toLowerCase()?.includes("age") ||
                       dataElement?.name?.toLowerCase()?.includes("secondary id")
                       // ||
                       // dataElement?.name?.toLowerCase()?.includes("patient id")

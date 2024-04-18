@@ -6,7 +6,7 @@ import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
 import ErrorModal from "../components/ErrorModal";
 import { useNavigate } from "react-router-dom";
-import { evaluateShowIf, evaluateValidations, generateId } from "../lib/helpers";
+import { evaluateShowIf, evaluateValidations, generateId, calculateAges, generateDateOfBirth } from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
@@ -180,16 +180,20 @@ export default function Register() {
               "Surgical Procedure",
               "Date of Surgery",
               "Date of Admission",
-              "Age",
+              "Age (Years)",
+              "Age (Months)",
               "Secondary ID",
             ];
 
             if (!exceptions.includes(attribute.displayName)) {
               acc[attribute.attribute] = formatValue(attribute.value);
               if (attribute.displayName?.toLowerCase() === "date of birth") {
-                const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
+                const yearField = dataElements?.find((dataElement) => dataElement.name === "Age (Years)");
+                const monthField = dataElements?.find((dataElement) => dataElement.name === "Age (Months)");
+                const ages = calculateAges(attribute.value);
                 form.setFieldsValue({
-                  [ageField?.id]: dayjs().diff(dayjs(attribute.value), "year"),
+                  [ageField?.id]: ages?.years,
+                  [monthField?.id]: ages?.months,
                 });
               }
             }
@@ -220,11 +224,22 @@ export default function Register() {
     }));
 
     const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
+    const yearsField = dataElements?.find((dataElement) => dataElement.name === "Age (Years)");
+    const monthsField = dataElements?.find((dataElement) => dataElement.name === "Age (Months)");
     if (name === dateOfBirthField?.id) {
-      const ageField = dataElements?.find((dataElement) => dataElement.name === "Age");
-      const age = dayjs().diff(dayjs(value), "year");
+      const age = calculateAges(dayjs(value).format("YYYY-MM-DD"));
       form.setFieldsValue({
-        [ageField?.id]: age,
+        [yearsField?.id]: age?.years,
+        [monthsField?.id]: age?.months,
+      });
+    }
+
+    if (name === yearsField?.id || name === monthsField?.id) {
+      const years = form.getFieldValue(yearsField?.id) || 0;
+      const months = form.getFieldValue(monthsField?.id) || 0;
+      const dateOfBirth = generateDateOfBirth({ years, months });
+      form.setFieldsValue({
+        [dateOfBirthField?.id]: dayjs(dateOfBirth),
       });
     }
   };
@@ -260,10 +275,7 @@ export default function Register() {
                             setFormValues(allFormValues);
                             handleChange({ target: { name, value } });
                           }}
-                          disabled={
-                            dataElement?.name?.toLowerCase()?.includes("age") ||
-                            dataElement?.name?.toLowerCase()?.includes("secondary id")
-                          }
+                          disabled={dataElement?.name?.toLowerCase()?.includes("secondary id")}
                           onBlur={async () => {
                             if (dataElement?.name?.toLowerCase()?.includes("patient id")) {
                               await fetchDemographics(dataElement.id, form.getFieldValue(dataElement.id));

@@ -1,5 +1,6 @@
 import { format } from "date-fns";
 import { formatValue } from "./mapValues";
+import moment from "moment";
 
 export function tableDataToObject(tableData) {
   const headers = tableData.headers.map((header) => ({
@@ -378,3 +379,32 @@ export const toTitleCase = (str) =>
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(" ");
+
+
+
+export const calculateAges = (date) => {
+  const now = moment()
+  const dob = moment(date)
+  const years = now.diff(dob, 'years')
+  dob.add(years, 'years')
+  const months = now.diff(dob, 'months')
+  dob.add(months, 'months')
+  const weeks = now.diff(dob, 'weeks')
+  dob.add(weeks, 'weeks')
+  const days = now.diff(dob, 'days')
+  return { years, months, weeks, days }
+}
+
+export const generateDateOfBirth = (
+  age = {
+    years: 0,
+    months: 0,
+    weeks: 0,
+  }
+) => {
+  const dob = moment()
+    .subtract(age.years, 'years')
+    .subtract(age.months, 'months')
+    .subtract(age.weeks, 'weeks')
+  return dob?.format('YYYY-MM-DD')
+}
