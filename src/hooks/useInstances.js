@@ -202,7 +202,7 @@ export default function UseInstances() {
     }
 
     if (startDate && endDate) {
-      const dateOfSurgeryDataElement = registration?.sections?.flatMap((section) => {
+      const dateOfSurgeryDataElement = registration?.flatMap((section) => {
         return section?.dataElements?.filter((dataElement) => {
           return dataElement?.name?.toLowerCase() === "date of surgery";
         });

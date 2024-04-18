@@ -65,11 +65,8 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
                     ]}
                   >
                     <InputItem
-                      type={dataElement?.optionSet ? "SELECT" : dataElement?.valueType}
-                      options={dataElement?.optionSet?.options?.map((option) => ({
-                        label: option.displayName,
-                        value: option.code,
-                      }))}
+                      type={dataElement?.options ? "SELECT" : dataElement?.valueType}
+                      options={dataElement?.options}
                       placeholder={`Enter ${dataElement.name}`}
                       name={dataElement.id}
                       {...(dataElement.disablefuturedate
