@@ -153,9 +153,6 @@ const RenderFormSection = ({
         await deleteEvents(eventsToDelete);
       }
 
-      console.log("Sign of infection", values[signOfInfectionId]);
-      console.log("values", Object.values(values)?.[0]?.[0]);
-
       if (Object.values(values)?.[0]?.[0]?.[signOfInfectionId] === false) {
         const symptomEvents = stageEvents.filter((event) => event.programStage === constants.stages.symptoms);
 
@@ -312,6 +309,19 @@ const RenderFormSection = ({
                                           shouldShow && (
                                             <Form.Item
                                               {...restField}
+                                              shouldUpdate={(prevValues, curValues) => {
+                                                const listName = section?.stage?.stageId;
+
+                                                if (
+                                                  isSampleId &&
+                                                  prevValues?.[listName]?.length < curValues?.[listName]?.length
+                                                ) {
+                                                  form.setFieldValue(
+                                                    [listName, curValues[listName].length - 1, dataElement.id],
+                                                    sampleId
+                                                  );
+                                                }
+                                              }}
                                               key={dataElement.id}
                                               label={dataElement.name}
                                               name={[name, dataElement.id]}
@@ -328,11 +338,11 @@ const RenderFormSection = ({
                                                     ...formatDataValues(stageEvents),
                                                     ...(sectionvalues || {}),
                                                   },
-                                                  [...dataElements, ...attributes],
+                                                  [...dataElements, ...attributes]
                                                 ),
                                                 ...evaluateRiskFactors(
                                                   dataElement?.name?.toLowerCase() === "risk factors",
-                                                  attributes,
+                                                  attributes
                                                 ),
                                                 ...disableDuplicateProphylaxis(dataElement),
                                                 ...disableNoneOption(dataElement),
@@ -347,7 +357,7 @@ const RenderFormSection = ({
                                                 onChange={changeHandler}
                                                 name={[name, dataElement.id]}
                                                 {...(!shouldShow ? { value: null } : {})}
-                                                {...(isSampleId ? { defaultValue: sampleId } : {})}
+                                                // {...(isSampleId ? { defaultValue: sampleId } : {})}
                                                 {...(dataElement.disablefuturedate
                                                   ? {
                                                       disabledDate: (current) => {
@@ -373,6 +383,9 @@ const RenderFormSection = ({
                             type="dashed"
                             onClick={() => {
                               add();
+                              if (fields.length === 0 && sampleId) {
+                                form.setFieldValue([section?.stage?.stageId, 0, constants.dataElements.sampleId], sampleId);
+                              }
                             }}
                             style={{ width: "60%" }}
                             disabled={JSON.stringify(form.getFieldsValue()).includes("None given")}
