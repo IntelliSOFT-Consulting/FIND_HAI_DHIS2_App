@@ -22,9 +22,9 @@ export const formatDisplayValue = (value) => {
   return value;
 };
 
-export const formatValues = (form, dataValues, type=null) => {
+export const formatValues = (form, dataValues, type = null) => {
   const dataElements = form?.map((section) => {
-    if (type === 'enrollment') {
+    if (type === "enrollment") {
       return {
         ...section,
         dataElements: section?.dataElements?.map((dataElement) => {
@@ -57,4 +57,13 @@ export const formatValues = (form, dataValues, type=null) => {
   });
 
   return dataElements;
+};
+
+export const mappings = {
+  id: "US1gCMCXtGq",
+  firstName: "M9DBAh9Lnpw",
+  middleName: "GhX9ASUscsM",
+  lastName: "cNBoqe3kM9F",
+  birthDate: "Y4bglcLiAGx",
+  gender: "O9xFVVDAqsL",
 };

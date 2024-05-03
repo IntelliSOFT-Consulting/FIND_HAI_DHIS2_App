@@ -13,7 +13,7 @@ export const fetchHmisPatient = async (patientId) => {
     : { Authorization: `Basic ${Buffer.from(`${REACT_APP_HMIS_AUTH_USERNAME}:${REACT_APP_HMIS_AUTH_PASSWORD}`).toString("base64")}` };
 
   try {
-    const response = await axios.get(`/hmis/${patientId}`, {
+    const response = await axios.get(`/hmis/patient/${patientId}`, {
       headers: {
         ...auth,
         "Content-Type": "application/json",

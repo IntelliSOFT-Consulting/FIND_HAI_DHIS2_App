@@ -6,7 +6,7 @@ import { createUseStyles } from "react-jss";
 import { useDataEngine } from "@dhis2/app-runtime";
 import ErrorModal from "../components/ErrorModal";
 import { useNavigate } from "react-router-dom";
-import { evaluateShowIf, evaluateValidations, generateId, calculateAges, generateDateOfBirth } from "../lib/helpers";
+import { evaluateShowIf, evaluateValidations, generateId, calculateAges, generateDateOfBirth, isValidDate } from "../lib/helpers";
 import dayjs from "dayjs";
 import localeData from "dayjs/plugin/localeData";
 import weekday from "dayjs/plugin/weekday";
@@ -15,6 +15,7 @@ import useEnrollment from "../hooks/useEnrollment";
 import { formatValue } from "../lib/mapValues";
 import Accordion from "../components/Accordion";
 import { fetchHmisPatient } from "../api/hmis";
+import { mappings } from "../lib/mapValues";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -160,11 +161,25 @@ export default function Register() {
       ) {
         let patient = await fetchHmisPatient(value);
         if (patient) {
+          const obj = {};
+          const keys = Object.keys(patient);
+          const mappedKeys = keys.map((key) => {
+            const mappedKey = mappings[key];
+            obj[mappedKey] = isValidDate(patient[key]) ? dayjs(patient[key]) : patient[key];
+            return { [mappedKey]: patient[key] };
+          });
+
           const currentSurgery =
             patient?.surgeries?.find((surgery) => dayjs(surgery?.dateOfSurgery).isSame(dayjs(), "day")) || {};
+
+          const ages = calculateAges(patient.birthDate);
+          const ageField = dataElements?.find((dataElement) => dataElement.name === "Age (Years)");
+          const monthField = dataElements?.find((dataElement) => dataElement.name === "Age (Months)");
           patient = {
-            ...patient,
+            ...obj,
             ...currentSurgery,
+            [ageField?.id]: ages?.years,
+            [monthField?.id]: ages?.months,
           };
 
           form.setFieldsValue(patient);
