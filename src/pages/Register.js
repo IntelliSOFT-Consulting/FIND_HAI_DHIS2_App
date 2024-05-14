@@ -207,7 +207,7 @@ export default function Register() {
                 const monthField = dataElements?.find((dataElement) => dataElement.name === "Age (Months)");
                 const ages = calculateAges(attribute.value);
                 form.setFieldsValue({
-                  [ageField?.id]: ages?.years,
+                  [yearField?.id]: ages?.years,
                   [monthField?.id]: ages?.months,
                 });
               }
