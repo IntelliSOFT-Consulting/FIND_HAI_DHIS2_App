@@ -173,20 +173,15 @@ export function statusColor(status) {
 }
 
 export function generateWeeks() {
-  const today = new Date();
+  
+  const today = moment()
   const weeksArray = [];
 
   for (let i = 1; i <= 10; i++) {
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() - 7 * i + 1);
-
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() - 7 * (i - 1));
-
-    const weekLabel = `Week ${i}`;
+    const week = today.clone().add(i, "weeks");
     weeksArray.push({
-      label: weekLabel,
-      value: `${format(new Date(startDate), "yyyy-MM-dd")}..${format(new Date(endDate), "yyyy-MM-dd")}`,
+      label: `Week ${i}`,
+      value: `${week.startOf("week").format("YYYY-MM-DD")}..${week.endOf("week").format("YYYY-MM-DD")}`,
     });
   }
 

@@ -299,7 +299,9 @@ export default function SurgeryForm() {
       if (dateOfSurgery) {
         const date = moment(dateOfSurgery);
         const today = moment();
+
         const diff = today.diff(date, "weeks");
+        console.log("diff", diff)
         if (diff > 6 && enrollmentData?.status !== "CANCELLED") {
           setShowOverdue(true);
         } else {

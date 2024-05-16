@@ -52,18 +52,18 @@ export const createStagesForms = (program) => {
 };
 
 const filterParentStages = (stageForms) => {
-  return stageForms.filter((stage) => !stage.parentstage);
+  return stageForms?.filter((stage) => !stage.parentstage);
 };
 
 const mapSurgeryForms = (parentStages, stageForms) => {
-  return parentStages.map((stage) => {
-    const childStages = stageForms.filter((item) => item.parentstage === stage.stageId);
+  return parentStage?.map((stage) => {
+    const childStages = stageForms?.filter((item) => item.parentstage === stage.stageId);
     const sortedStages = [stage, ...childStages]?.sort((a, b) => a.sort - b.sort);
 
     const sections = sortedStages.flatMap((item) => {
-      const sameStageSections = item.sections.filter((section) => section.stageId === item.stageId);
+      const sameStageSections = item.sections?.filter((section) => section.stageId === item.stageId);
 
-      const sameStageSectionsWithParent = sameStageSections.map((section) => {
+      const sameStageSectionsWithParent = sameStageSections?.map((section) => {
         return {
           ...section,
           parent: item.stageId,

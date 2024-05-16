@@ -25,6 +25,17 @@
     margin-bottom: 2.5rem;
 }
 
-.uploader {
+.mr-2 {
+    margin-right: 0.5rem;
+}
 
+.truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-icon {
+  width: 1.5rem;
+  height: 1.5rem;
 }

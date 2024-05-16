@@ -7,15 +7,7 @@ import { DownloadOutlined, DeleteOutlined, FileAddOutlined } from "@ant-design/i
 const { Dragger } = Upload;
 
 function Manuals() {
-  const {
-    files,
-    error,
-    loading,
-    getFiles,
-    uploadFile,
-    deleteFile,
-    filterFiles,
-  } = useFiles();
+  const { files, error, loading, getFiles, uploadFile, deleteFile, filterFiles } = useFiles();
   const [searchTerm, setSearchTerm] = useState("");
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -50,22 +42,26 @@ function Manuals() {
 
   const columns = [
     {
-      title: "Filename",
-      dataIndex: "filename",
-      key: "filename",
+      title: "",
+      dataIndex: "name",
+      key: "name",
       render: (_, record) => {
         return (
-          <div className="flex items-center">
-            <div className="w-5 h-5">
-              <FileIcon
-                extension={record.name?.split(".")?.pop()}
-                {...defaultStyles[record.name?.split(".")?.pop()]}
-              />
-            </div>
-            <p className="ml-3">{record.name}</p>
+          <div className="file-icon">
+            <FileIcon extension={record.name?.split(".")?.pop()} {...defaultStyles[record.name?.split(".")?.pop()]} />
           </div>
         );
       },
+    },
+    {
+      title: "Filename",
+      dataIndex: "name",
+      key: "name",
+      render: (text) => (
+        <p className="truncate" style={{ maxWidth: "200px" }}>
+          {text}
+        </p>
+      ),
     },
     {
       title: "Size",
@@ -84,13 +80,7 @@ function Manuals() {
       key: "action",
       render: (text, record) => (
         <div className="flex">
-          <a
-            href={`/api/v1/files/${record.name}`}
-            target="_blank"
-            rel="noreferrer"
-            download={record.name}
-            className="mr-2"
-          >
+          <a href={`/api/v1/files/${record.name}`} target="_blank" rel="noreferrer" download={record.name} className="mr-2">
             <Button className="download-btn" icon={<DownloadOutlined />} />
           </a>
           <Popconfirm
@@ -113,24 +103,15 @@ function Manuals() {
           <p className="ant-upload-drag-icon">
             <FileAddOutlined />
           </p>
-          <p className="ant-upload-text">
-            Click or drag file to this area to upload a file
-          </p>
-          <p className="ant-upload-hint">
-            The uploaded file will be available for download by all users.
-          </p>
+          <p className="ant-upload-text">Click or drag file to this area to upload a file</p>
+          <p className="ant-upload-hint">The uploaded file will be available for download by all users.</p>
         </Dragger>
       </div>
       {uploading && <p>Uploading...</p>}
       {deleting && <p>Deleting...</p>}
       {loading && <p>Loading...</p>}
 
-      <Input
-        placeholder="Search files"
-        value={searchTerm}
-        onChange={handleSearch}
-        size="large"
-      />
+      <Input placeholder="Search files" value={searchTerm} onChange={handleSearch} size="large" />
       <div className="my-10 overflow-x-auto">
         <Table
           dataSource={files}
