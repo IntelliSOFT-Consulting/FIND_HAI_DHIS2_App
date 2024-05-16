@@ -80,7 +80,7 @@ function Manuals() {
       key: "action",
       render: (text, record) => (
         <div className="flex">
-          <a href={`/api/v1/files/${record.name}`} target="_blank" rel="noreferrer" download={record.name} className="mr-2">
+          <a href={`/server/files/${record.name}`} target="_blank" rel="noreferrer" download={record.name} className="mr-2">
             <Button className="download-btn" icon={<DownloadOutlined />} />
           </a>
           <Popconfirm
@@ -99,7 +99,7 @@ function Manuals() {
   return (
     <div className="uploader">
       <div className="my-6">
-        <Dragger action="/api/v1/upload" {...uploadProps}>
+        <Dragger action="/server/upload" {...uploadProps}>
           <p className="ant-upload-drag-icon">
             <FileAddOutlined />
           </p>

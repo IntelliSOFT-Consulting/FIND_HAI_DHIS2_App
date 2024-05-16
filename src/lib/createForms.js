@@ -56,7 +56,7 @@ const filterParentStages = (stageForms) => {
 };
 
 const mapSurgeryForms = (parentStages, stageForms) => {
-  return parentStage?.map((stage) => {
+  return parentStages?.map((stage) => {
     const childStages = stageForms?.filter((item) => item.parentstage === stage.stageId);
     const sortedStages = [stage, ...childStages]?.sort((a, b) => a.sort - b.sort);
 

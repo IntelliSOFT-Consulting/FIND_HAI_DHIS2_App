@@ -1,9 +1,9 @@
 import { useState } from "react";
-import api from "axios";
+import axios from "axios";
 
-const axios = api.create({
-  baseURL: process.env.REACT_APP_FILE_UPLOAD_URL,
-});
+// const axios = api.create({
+//   baseURL: process.env.REACT_APP_FILE_UPLOAD_URL,
+// });
 
 export const useFiles = () => {
   const [files, setFiles] = useState([]);
@@ -14,7 +14,7 @@ export const useFiles = () => {
   const getFiles = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("/api/v1/files");
+      const response = await axios.get("/server/files");
       setFiles(response.data.files);
       setAllFiles(response.data.files);
       setLoading(false);
@@ -29,7 +29,7 @@ export const useFiles = () => {
       setLoading(true);
       const formData = new FormData();
       formData.append("file", file);
-      await axios.post("/api/v1/upload", formData);
+      await axios.post("/server/upload", formData);
       await getFiles();
       setLoading(false);
     } catch (error) {
@@ -41,7 +41,7 @@ export const useFiles = () => {
   const deleteFile = async (filename) => {
     try {
       setLoading(true);
-      await axios.delete(`/api/v1/files/${filename}`);
+      await axios.delete(`/server/files/${filename}`);
       await getFiles();
       setLoading(false);
     } catch (error) {
