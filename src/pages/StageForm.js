@@ -16,6 +16,7 @@ import Alert from "../components/Alert";
 import UseDataStore from "../hooks/useDataStore";
 import { formatForm } from "../lib/formFormatter";
 import { setAttributes } from "../redux/actions";
+import { filterEventsCategory } from "../utils/eventMapper";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -109,23 +110,16 @@ export default function StageForm() {
       if (stageValues?.length > 0 && stageForm) {
         const dataForm = formatForm(stageForm, stageValues);
         setDataValues(dataForm);
+      } else {
+        setDataValues({});
       }
     }
   };
 
   const filterAndSortEvents = async (events) => {
     const mappings = await getData("repeatSections", "postOperative");
-    const repeatIds = [...new Set(stageForm?.sections?.map((section) => section?.stage?.stageId))];
 
-    const filteredEvents = events?.filter((event) => {
-      if (queryParams.event) {
-        const repeatEvents = mappings
-          .filter((mapping) => mapping.parentEvent === queryParams.event)
-          .map((mapping) => mapping.event);
-        return event.event === queryParams.event || repeatEvents.includes(event.event);
-      }
-      return event.programStage === stage || repeatIds?.includes(event.programStage);
-    });
+    const filteredEvents = filterEventsCategory(mappings, queryParams?.event, events);
 
     if (filteredEvents) {
       return filteredEvents.sort((a, b) => a.created - b.created);

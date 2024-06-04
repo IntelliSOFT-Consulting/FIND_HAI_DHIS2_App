@@ -90,8 +90,10 @@ export default function SurgeryForm() {
   const [open, setOpen] = useState(false);
   const [isMicrobiologyDisabled, setIsMicrobiologyDisabled] = useState(false);
   const [stagesData, setStagesData] = useState(null);
+  const [mappings, setMappings] = useState([]);
 
   const { registration, stages } = useSelector((state) => state.forms);
+
   const user = useSelector((state) => state.user);
 
   const classes = useStyles();
@@ -143,6 +145,11 @@ export default function SurgeryForm() {
     }));
 
     dispatch(setAttributes(attributes));
+    let store = await getData("repeatSections", "postOperative");
+
+    if (store) {
+      setMappings(store);
+    }
 
     const enrollmentValues = formatValues(registration, data, "enrollment");
 
@@ -261,11 +268,6 @@ export default function SurgeryForm() {
       return navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
 
-    let mappings = await getData("repeatSections", "postOperative");
-    if (!Array.isArray(mappings)) {
-      mappings = [];
-    }
-
     const stageIds = [...new Set(stage?.sections?.map((section) => section?.stage?.stageId))];
 
     const events = await createStageEvents(stageIds, []);
@@ -276,9 +278,11 @@ export default function SurgeryForm() {
         return {
           parentEvent: events[0],
           event,
+          programStage: stage.stageId,
         };
       });
       await saveData("repeatSections", "postOperative", [...mappings, ...newMappings]);
+
       params = isRepeat ? `?event=${events[0]}` : "";
       navigate(`/surgery/${stage.stageId}/enrollment/${enrollment}/tei/${trackedEntityInstance}${params}`);
     }
@@ -301,7 +305,6 @@ export default function SurgeryForm() {
         const today = moment();
 
         const diff = today.diff(date, "weeks");
-        console.log("diff", diff)
         if (diff > 6 && enrollmentData?.status !== "CANCELLED") {
           setShowOverdue(true);
         } else {
@@ -438,7 +441,7 @@ export default function SurgeryForm() {
                             />
                           </div>
                         ))
-                      : getFullEvents(enrollmentData, stage)?.events?.map(
+                      : getFullEvents(enrollmentData, stage, mappings)?.events?.map(
                           (event, i) =>
                             event?.dataValues && (
                               <div className={classes.event} key={i}>
@@ -456,7 +459,13 @@ export default function SurgeryForm() {
 
                     {stage?.multiple && (
                       <div className={classes.newEvent}>
-                        <Button disabled={isDisabled} onClick={() => addEvent(stage, true)} type="dashed" icon={<PlusOutlined />} block>
+                        <Button
+                          disabled={isDisabled}
+                          onClick={() => addEvent(stage, true)}
+                          type="dashed"
+                          icon={<PlusOutlined />}
+                          block
+                        >
                           Add {stage?.title?.toLowerCase()?.includes("pathogen information") ? "Pathogen Information" : "Review"}
                         </Button>
                       </div>

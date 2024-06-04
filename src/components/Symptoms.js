@@ -1,13 +1,13 @@
-import { useState, useEffect, Fragment } from "react";
-import { Button, Table, Radio, Form, message } from "antd";
-import Accordion from "./Accordion";
-import { evaluateShowIf, evaluateValidations, formatAttributes, formatDataValues, toTitleCase } from "../lib/helpers";
-import { dataElements, stages } from "../contants/ids";
-import { formatValue } from "../lib/mapValues";
-import InputItem from "./InputItem";
+import { Button, Form, Radio, Table, message, Spin } from "antd";
+import { Fragment, useEffect, useState } from "react";
 import { createUseStyles } from "react-jss";
-import UseEvents from "../hooks/useEvents";
+import { dataElements, stages } from "../contants/ids";
 import UseDataStore from "../hooks/useDataStore";
+import UseEvents from "../hooks/useEvents";
+import { toTitleCase } from "../lib/helpers";
+import { formatValue } from "../lib/mapValues";
+import Accordion from "./Accordion";
+import InputItem from "./InputItem";
 
 const useStyles = createUseStyles({
   fullWidth: {
@@ -26,6 +26,14 @@ const useStyles = createUseStyles({
       backgroundColor: "#026C26 !important",
       color: "white !important",
     },
+  },
+  loading: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100%",
+    width: "100%",
+    padding: "2rem",
   },
 });
 
@@ -141,9 +149,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
 
   const onFinish = async (values) => {
     setSaving(true);
-    // look for a string value in the values
     const other = values[dataElements.otherSymptoms]?.trim();
-    // create data values for the selected symptoms. Each selected symptom will be saved as a separate event
     const dataValues = selectedSymptoms.map((symptom, i) => {
       const ids = Object.keys(symptom);
       const data = ids.map((id) => {
@@ -178,7 +184,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
       });
       const savedEvents = await createEvents(payload);
       const newMappings = savedEvents?.map((id) => {
-        return { parentEvent: event, event: id };
+        return { parentEvent: event, event: id, programStage: stages.symptoms };
       });
 
       const updatedMappings = [...allMappings, ...newMappings];
@@ -189,11 +195,15 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
   };
   return (
     <Form form={form} layout="vertical" className={classes.fullWidth} onFinish={onFinish}>
-      {stage?.stage?.sections?.map((sectionItem) => {
-        return (
-          <Fragment key={sectionItem.id+ '-1'}>
+      {loading ? (
+        <div className={classes.loading}>
+          <Spin />
+        </div>
+      ) : (
+        stage?.stage?.sections?.map((sectionItem) => (
+          <Fragment key={sectionItem.id + "-1"}>
             {sectionItem.sectionName !== stage?.title && sectionItem.sectionName?.trim() && (
-              <Accordion title={toTitleCase(sectionItem.sectionName)}  open={true}>
+              <Accordion title={toTitleCase(sectionItem.sectionName)} open={true}>
                 {sectionItem.elements?.map((dataElement) => {
                   return dataElement?.name === "Symptoms" ? (
                     <Table
@@ -229,8 +239,8 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
               </Accordion>
             )}
           </Fragment>
-        );
-      })}
+        ))
+      )}
     </Form>
   );
 }

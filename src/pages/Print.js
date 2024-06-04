@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Fragment } from "react";
 import { Breadcrumb, Divider, Table, Button } from "antd";
 import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
-import { CloudDownloadOutlined } from "@ant-design/icons";
+import { CloudDownloadOutlined, DoubleLeftOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
-import { DoubleLeftOutlined } from "@ant-design/icons";
 import { CircularLoader } from "@dhis2/ui";
 import Section from "../components/Section";
 import CardItem from "../components/CardItem";
@@ -11,7 +10,7 @@ import useGetInstances from "../hooks/useInstances";
 import UseDataStore from "../hooks/useDataStore";
 import { formatDisplayValue } from "../lib/mapValues";
 import { createUseStyles } from "react-jss";
-import moment from "moment/moment";
+import moment from "moment";
 import { toTitleCase } from "../lib/helpers";
 import html2PDF from "jspdf-html2canvas";
 
@@ -37,34 +36,24 @@ const Print = () => {
   const { enrollment, trackedEntityInstance } = useParams();
   const surgeryLink = `/surgery/${trackedEntityInstance}/${enrollment}`;
   const location = useLocation();
-
   const navigate = useNavigate();
   const classes = useStyles();
-
   const { state } = location;
 
   useEffect(() => {
     if (!state) {
       navigate("/surgeries");
     }
-  }, [state]);
+  }, [state, navigate]);
 
   const handleDownload = () => {
-    let page = document.getElementById("page");
-
+    const page = document.getElementById("page");
     html2PDF(page, {
-      jsPDF: {
-        format: "a4",
-      },
-      margin: {
-        top: 20,
-        right: 20,
-        bottom: 20,
-        left: 20,
-      },
+      jsPDF: { format: "a4" },
+      margin: { top: 20, right: 20, bottom: 20, left: 20 },
       imageType: "image/jpeg",
       output: `./pdf/CRF-${new Date().toISOString().split("T")[0]}.pdf`,
-      success: function (pdf) {
+      success: (pdf) => {
         pdf.save(`CRF-${new Date().toISOString().split("T")[0]}.pdf`);
       },
     });
@@ -81,12 +70,7 @@ const Print = () => {
       title: "Value",
       dataIndex: "value",
       key: "value",
-      render: (text, record) => {
-        if (record.valueType === "DATE") {
-          return moment(text).format("YYYY-MM-DD");
-        }
-        return text;
-      },
+      render: (text, record) => (record.valueType === "DATE" ? moment(text).format("YYYY-MM-DD") : text),
       width: "60%",
     },
   ];
@@ -98,16 +82,18 @@ const Print = () => {
       const datas = await Promise.all(
         state.map(async (item) => {
           const stageForm = stages?.find((stageItem) => stageItem.stageId === item.programStage);
-          const stageValues = await filterAndSortEvents(data.events, item.programStage, stageForm, item.event);
+          const stageValues = data?.events?.sort((a, b) => new Date(b?.eventDate).getTime() - new Date(a?.eventDate).getTime());
+
           if (stageValues) {
-            const columns = createColumns(stageForm.stage, stageValues);
+            const sections = stageForm.sections?.flatMap((section) => section.stage.sections);
+            const columns = createColumns(sections, stageValues);
             return (
-              <React.Fragment key={item.programStage}>
+              <Fragment key={item.programStage}>
                 <div className={classes.mainSection}>
-                  <Section title={item?.name} primary={true} />
+                  <Section title={item?.name} primary />
                 </div>
                 {columns?.map((column, index) => (
-                  <React.Fragment key={index}>
+                  <Fragment key={index}>
                     {column?.name?.trim() && column?.data?.length > 0 && (
                       <Divider orientation="left" className={classes.divider}>
                         {toTitleCase(column?.name)}
@@ -123,46 +109,26 @@ const Print = () => {
                         size="small"
                       />
                     )}
-                  </React.Fragment>
+                  </Fragment>
                 ))}
-              </React.Fragment>
+              </Fragment>
             );
           }
         })
       );
-
       setComponents(datas);
     }
-  };
-
-  const filterAndSortEvents = async (events, stage, stageForm, mainEvent = null) => {
-    const mappings = await getData("repeatSections", "postOperative");
-
-    const repeatIds = [
-      ...new Set(
-        stageForm?.sections?.filter((section) => section?.repeatable && !section.multiple)?.map((section) => section?.stageId)
-      ),
-    ];
-    return events
-      ?.filter((event) => {
-        if (mainEvent) {
-          const repeatEvents = mappings.filter((mapping) => mapping?.parentEvent === mainEvent)?.map((mapping) => mapping?.event);
-          return event.event === mainEvent || repeatEvents?.includes(event.event);
-        }
-        return event.programStage === stage || repeatIds?.includes(event.programStage);
-      })
-      ?.sort((a, b) => a.created - b.created);
   };
 
   useEffect(() => {
     if (state && stages) {
       getEnrollment();
     }
-  }, [state, location, stages]);
+  }, [state, stages]);
 
-  const createColumns = (formData, data) => {
-    return [...formData?.sections?.map(item=>item.stage.sections)]?.map((section) => {
-      const sectionData = data?.filter((item) => item?.programStage === (section?.stageId || section.programStage));
+  const createColumns = (formData, data) =>
+    formData?.map((section) => {
+      const sectionData = data?.filter((item) => item?.programStage === section?.stageId);
       const sectionValues = sectionData?.flatMap((item) =>
         item?.dataValues?.reduce((acc, curr) => {
           acc[curr?.dataElement] = formatDisplayValue(curr?.value);
@@ -170,16 +136,13 @@ const Print = () => {
         }, {})
       );
 
-      const sectionDataElementIds = section?.dataElements?.map((dataElement) => dataElement?.id);
-      const sectionValuesData = sectionValues?.filter((item) => {
-        const sectionKeys = Object.keys(item);
-        return sectionKeys?.some((key) => sectionDataElementIds?.includes(key));
-      });
+      const sectionDataElementIds = section?.elements?.map((dataElement) => dataElement?.id);
+      const sectionValuesData = sectionValues?.filter((item) => Object.keys(item).some((key) => sectionDataElementIds?.includes(key)));
 
       return {
         name: section.title,
         programStage: section.programStage,
-        columns: section.dataElements?.map((dataElement) => ({
+        columns: section.elements?.map((dataElement) => ({
           title: dataElement.name,
           dataIndex: dataElement.id,
           key: dataElement.id,
@@ -187,8 +150,7 @@ const Print = () => {
         })),
         data: sectionValuesData,
       };
-    });
-  };
+    }) || [];
 
   return (
     <>
@@ -215,7 +177,7 @@ const Print = () => {
         ) : (
           <div id="page">
             <div className={classes.mainSection}>
-              <Section title="SURGERY SUMMARY" primary={true} />
+              <Section title="SURGERY SUMMARY" primary />
             </div>
             <Table
               columns={tableColumns}
@@ -228,7 +190,7 @@ const Print = () => {
               className={classes.mainSection}
             />
             {components?.map((component, index) => (
-              <React.Fragment key={index}>{component}</React.Fragment>
+              <Fragment key={index}>{component}</Fragment>
             ))}
           </div>
         )}

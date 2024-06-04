@@ -1,6 +1,6 @@
 export const evaluateRiskFactors = (isRiskFactors, attributes) => {
   if (isRiskFactors) {
-    const age = attributes.find((attribute) => attribute.name === "Age");
+    const age = attributes.find((attribute) => attribute.name === "Age (Years)");
 
     return [
       {

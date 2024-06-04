@@ -1,10 +1,15 @@
-export const getFullEvents = (enrollment, stage) => {
+export const getFullEvents = (enrollment, stage, mappings) => {
   const { events } = enrollment;
 
   if (!stage) {
     return events;
   }
-  const fullEvents = events.filter((event) => event.programStage === stage?.stageId);
+
+  const stageMappings = mappings
+    .filter((mapping) => mapping.programStage === stage?.stageId && mapping.parentEvent === mapping.event)
+    ?.map((mapping) => mapping.event);
+
+  const fullEvents = events.filter((event) => stageMappings.includes(event.event));
 
   return {
     ...stage,

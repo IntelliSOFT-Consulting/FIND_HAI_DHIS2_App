@@ -17,6 +17,8 @@ import { disableDuplicateProphylaxis, disableNoneOption, evaluateRiskFactors } f
 import useInstances from "../hooks/useInstances";
 import * as constants from "../contants/ids";
 import { DeleteTwoTone } from "@ant-design/icons";
+import UseDataStore from "../hooks/useDataStore";
+import { get } from "lodash";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -106,6 +108,8 @@ const RenderFormSection = ({
   const classes = useStyles();
   const navigate = useNavigate();
 
+  const { getData, saveData } = UseDataStore();
+
   const { program } = useSelector((state) => state.forms);
   const { trackedEntityInstance, enrollment } = useParams();
   const { id } = useSelector((state) => state.orgUnit);
@@ -128,6 +132,10 @@ const RenderFormSection = ({
       const formatted = formatDefaultValues(sectionEvents, section?.stage, isRepeatable);
       setInitialValues(formatted);
       setStageValues(formatted);
+    } else if (section && stageEvents?.length === 0) {
+      setInitialValues({
+        [section?.stage?.stageId]: [{}],
+      });
     }
   }, [stageEvents]);
 
@@ -164,6 +172,23 @@ const RenderFormSection = ({
       const response = await createEvents(createEventsPayload);
 
       if (response) {
+        if (eventId) {
+          const storeData = await getData("repeatSections", "postOperative");
+          const newEvents = response.map((item) => {
+            return {
+              event: item,
+              programStage: section?.stage?.stageId,
+              parentEvent: eventId,
+            };
+          });
+
+          const newEventsData = storeData.concat(newEvents);
+          const newEventsDataUnique = newEventsData.filter(
+            (item, index, self) => index === self.findIndex((t) => t.event === item.event)
+          );
+          await saveData("repeatSections", "postOperative", newEventsDataUnique);
+        }
+
         const instance = await getTrackedEntityInstance(trackedEntityInstance);
         message.success("Form submitted successfully");
         await getEnrollment();
