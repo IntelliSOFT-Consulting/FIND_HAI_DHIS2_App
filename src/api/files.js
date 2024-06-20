@@ -1,10 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 
-// const axios = api.create({
-//   baseURL: process.env.REACT_APP_FILE_UPLOAD_URL,
-// });
-
 export const useFiles = () => {
   const [files, setFiles] = useState([]);
   const [allFiles, setAllFiles] = useState([]);

@@ -129,7 +129,7 @@ export default function Register() {
       });
 
       if (response?.status === "SUCCESS") {
-        const enrollmentId = await createEnrollment(response?.importSummaries[0]?.reference, program, id);
+        const enrollmentId = await createEnrollment(response?.importSummaries[0]?.reference, program, id, values);
         navigate(`/surgery/${response?.importSummaries[0]?.reference}/${enrollmentId}`);
       }
     } catch (error) {

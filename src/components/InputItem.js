@@ -16,15 +16,6 @@ export default function InputItem({ type, name, ...props }) {
       case "SELECT":
         return <Select showSearch allowClear name={name} {...props} />;
       case "NUMBER":
-        return (
-          <InputNumber
-            style={{
-              width: "100%",
-            }}
-            name={name}
-            {...props}
-          />
-        );
       case "INTEGER":
         return (
           <InputNumber

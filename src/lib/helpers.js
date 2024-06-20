@@ -178,7 +178,7 @@ export function generateWeeks() {
   const weeksArray = [];
 
   for (let i = 1; i <= 10; i++) {
-    const week = today.clone().add(i, "weeks");
+    const week = today.clone().subtract(i, "weeks");
     weeksArray.push({
       label: `Week ${i}`,
       value: `${week.startOf("week").format("YYYY-MM-DD")}..${week.endOf("week").format("YYYY-MM-DD")}`,

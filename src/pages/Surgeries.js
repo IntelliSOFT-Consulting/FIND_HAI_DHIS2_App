@@ -44,25 +44,31 @@ const useStyles = createUseStyles({
 export default function Surgeries() {
   const [instances, setInstances] = useState(null);
   const [weeks, _] = useState(generateWeeks());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
   const styles = useStyles();
   const navigate = useNavigate();
+
   const { program } = useSelector((state) => state.forms);
 
   const { getSurgeries } = useInstances();
 
   const fetchSurgeries = async () => {
     if (!program) return;
-    const instances = await getSurgeries("", program);
-    setInstances(instances);
+    const instances = await getSurgeries("", program, currentPage, 12);
+    setInstances(instances?.results);
+    setTotal(instances?.total);
   };
 
   useEffect(() => {
     if (program) fetchSurgeries();
-  }, [program]);
+  }, [program, currentPage]);
 
   const searchSurgeries = async (query = "") => {
-    const searched = await getSurgeries(query, program);
-    setInstances(searched);
+    const searched = await getSurgeries(query, program, currentPage, 12);
+    setInstances(searched?.results);
+    setTotal(searched?.total);
   };
 
   const getSurgeriesDebounced = debounce(searchSurgeries, 400);
@@ -109,7 +115,7 @@ export default function Surgeries() {
       key: "Actions",
       render: (text, record) => (
         <Space size="middle">
-          <Button type="link" onClick={() => navigate(`/surgery/${record?.trackedEntityInstance}/${record?.enrollment}`)}>
+          <Button type="link" onClick={() => navigate(`/surgery/${record?.trackedEntity}/${record?.enrollment}`)}>
             View
           </Button>
         </Space>
@@ -171,26 +177,35 @@ export default function Surgeries() {
 
               return {
                 ...object,
-                trackedEntityInstance: instance?.trackedEntityInstance,
+                trackedEntity: instance?.trackedEntity,
                 trackedEntityType: instance?.trackedEntityType,
                 enrollment: instance?.enrollment,
                 status: instance?.status,
               };
             }) || []
           }
-          pagination={instances?.length > 10 ? { pageSize: 10, showSizeChanger: false } : false}
-          rowKey={(record) => record?.trackedEntityInstance}
+          rowKey={(record) => record?.trackedEntity}
           bordered
           size="small"
           locale={{
             emptyText: (
               <div>
                 <p>No Results. Add patient & surgery details</p>
-                <Button type="primary" onClick={() => navigate("/register")}>
-                  ADD
+                <Button type="primary" onClick={() => navigate("/register")} icon={<PlusOutlined />}>
+                  Register new surgery
                 </Button>
               </div>
             ),
+          }}
+          pagination={{
+            total,
+            pageSize: 12,
+            hideOnSinglePage: true,
+            current: currentPage,
+            showSizeChanger: false,
+            onChange: (page) => {
+              setCurrentPage(page);
+            },
           }}
         />
       </Spin>

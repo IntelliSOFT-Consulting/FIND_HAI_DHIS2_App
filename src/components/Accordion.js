@@ -1,7 +1,6 @@
-import React, { useState, useRef } from "react";
-import { createUseStyles } from "react-jss";
-import { TransitionMotion, spring } from "react-motion";
 import { CaretDownOutlined, CaretUpOutlined } from "@ant-design/icons";
+import React, { useRef, useState } from "react";
+import { createUseStyles } from "react-jss";
 
 const useStyles = createUseStyles({
   accordion: {

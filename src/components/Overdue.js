@@ -39,7 +39,8 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
   return (
     <Modal
       open={overdue || discontinue}
-      onClose={() => {
+      onCancel={() => {
+        navigate(discontinue ? surgeryLink : "/surgeries");
         setOverdue(false);
         setDiscontinue(false);
       }}
@@ -52,33 +53,31 @@ const Overdue = ({ overdue, setOverdue, onFinish, discontinue, setDiscontinue, s
             return (
               <>
                 <Section key={section.id} title={section.title} />
-                {section?.elements?.map((dataElement) => (
-                  <Form.Item
-                    label={dataElement.name}
-                    name={dataElement.id}
-                    valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
-                    rules={[
-                      {
-                        required: dataElement?.required,
-                        message: `Please input ${dataElement.name}!`,
-                      },
-                    ]}
-                  >
-                    <InputItem
-                      type={dataElement?.options ? "SELECT" : dataElement?.valueType}
-                      options={dataElement?.options}
-                      placeholder={`Enter ${dataElement.name}`}
+                {section?.elements?.map((dataElement) => {
+                  const disabledDate = (current) => current && current > dayjs().endOf("day");
+                  return (
+                    <Form.Item
+                      key={dataElement.id}
+                      label={dataElement.name}
                       name={dataElement.id}
-                      {...(dataElement.disablefuturedate
-                        ? {
-                            disabledDate: (current) => {
-                              return current && current > dayjs().endOf("day");
-                            },
-                          }
-                        : {})}
-                    />
-                  </Form.Item>
-                ))}
+                      valuePropName={dataElement?.valueType === "BOOLEAN" ? "checked" : "value"}
+                      rules={[
+                        {
+                          required: dataElement?.required,
+                          message: `Please input ${dataElement.name}!`,
+                        },
+                      ]}
+                    >
+                      <InputItem
+                        type={dataElement?.options ? "SELECT" : dataElement?.valueType}
+                        options={dataElement?.options}
+                        placeholder={`Enter ${dataElement.name}`}
+                        name={dataElement.id}
+                        {...(dataElement.disablefuturedate ? { disabledDate } : {})}
+                      />
+                    </Form.Item>
+                  );
+                })}
               </>
             );
           });

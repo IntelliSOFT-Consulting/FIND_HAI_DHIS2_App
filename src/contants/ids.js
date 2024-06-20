@@ -24,4 +24,5 @@ export const sections = {
 
 export const attributes = {
   dateOfEvent: "H5vaWUOUEdF",
+  dateOfSurgery: "Ogx5pUkCK7Y",
 };

@@ -52,7 +52,6 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
       }));
     });
 
-
     const dateOfBirthField = dataElements?.find((dataElement) => dataElement.name === "Date of Birth");
     const yearsField = dataElements?.find((dataElement) => dataElement.name === "Age (Years)");
     const monthsField = dataElements?.find((dataElement) => dataElement.name === "Age (Months)");
@@ -145,11 +144,7 @@ const EditSurgeryDetails = ({ open, setOpen, enrollment, getEnrollment }) => {
                     type={dataElement.options ? "SELECT" : dataElement.valueType}
                     options={dataElement.options}
                     placeholder={dataElement.name}
-                    disabled={
-                      dataElement?.name?.toLowerCase()?.includes("secondary id")
-                      // ||
-                      // dataElement?.name?.toLowerCase()?.includes("patient id")
-                    }
+                    disabled={dataElement?.name?.toLowerCase()?.includes("secondary id")}
                     onChange={(e) => {
                       const name = e?.target?.name || dataElement.id;
                       const value = e?.target?.value || e;

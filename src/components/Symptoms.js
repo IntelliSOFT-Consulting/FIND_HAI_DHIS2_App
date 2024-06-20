@@ -40,7 +40,6 @@ const useStyles = createUseStyles({
 export default function Symptoms({ stage, events, program, orgUnit, trackedEntityInstance, event }) {
   const [selectedSymptoms, setSelectedSymptoms] = useState([]);
   const [currentSymptoms, setCurrentSymptoms] = useState([]);
-  const [eventMapping, setEventMapping] = useState([]);
   const [allMappings, setAllMappings] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -54,8 +53,7 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
   const { createEvents } = UseEvents();
 
   const populateSymptoms = () => {
-    const syptomDataElement = stage?.stage?.sections
-      ?.find((section) => section.sectionName === "Symptoms")
+    const syptomDataElement = stage?.stage?.sections?.find((section) => section.sectionName === "Symptoms")
       ?.elements?.find((element) => element.name === "Symptoms");
 
     const initial = syptomDataElement?.options?.map((item) => {
@@ -76,7 +74,6 @@ export default function Symptoms({ stage, events, program, orgUnit, trackedEntit
     const mappings = await getData("repeatSections", "postOperative");
     const symptoms = mappings?.filter((item) => event === item?.parentEvent);
     setAllMappings(mappings);
-    setEventMapping(symptoms);
     const eventIds = symptoms?.map((item) => item?.event);
     const stageEvents = events?.filter((event) => eventIds.includes(event.event) && event.programStage === stages.symptoms);
     setCurrentSymptoms(stageEvents);

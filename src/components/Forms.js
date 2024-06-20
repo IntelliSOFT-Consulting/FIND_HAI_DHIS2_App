@@ -104,7 +104,6 @@ const Forms = ({
     } else {
       payload = {
         program: program?.id,
-        // programStage: programStageId,
         trackedEntityInstance: instanceId,
         eventDate: new Date(),
         orgUnit: organisationUnit?.id,

@@ -3,10 +3,14 @@ import { useParams } from "react-router-dom";
 import { setProgramValues } from "../redux/actions";
 import { message } from "antd";
 import { useDispatch, useSelector } from "react-redux";
+import UseEnrollment from "./useEnrollment";
+import moment from "moment";
 
 export default function UseInstances() {
   const engine = useDataEngine();
   const { trackedEntityInstance, enrollment } = useParams();
+
+  const { updateEnrollment } = UseEnrollment();
 
   const { registration } = useSelector((state) => state.forms);
   const dispatch = useDispatch();
@@ -50,9 +54,26 @@ export default function UseInstances() {
       if (isNew) {
         return events?.enrollments[0];
       }
-      const userEnrollments = events?.enrollments?.find((enroll) => enroll.enrollment === enrollment);
+      const userEnrollment = events?.enrollments?.find((enroll) => enroll.enrollment === enrollment);
 
-      return userEnrollments;
+      const dateOfSurgery = userEnrollment?.attributes?.find((attr) => attr.displayName === "Date of Surgery");
+
+      const today = moment().format("YYYY-MM-DD");
+      const isDateOfSurgeryValid = moment(dateOfSurgery?.value).isSameOrBefore(today);
+
+      if (
+        moment(dateOfSurgery?.value).format("YYYY-MM-DD") !== moment(userEnrollment?.enrollmentDate).format("YYYY-MM-DD") &&
+        isDateOfSurgeryValid
+      ) {
+        userEnrollment.enrollmentDate = dateOfSurgery?.value;
+
+        await updateEnrollment(userEnrollment.enrollment, {
+          ...userEnrollment,
+          enrollmentDate: dateOfSurgery?.value,
+        });
+      }
+
+      return userEnrollment;
     } catch (error) {
       message.error("Error getting enrollment data");
     }
@@ -132,7 +153,7 @@ export default function UseInstances() {
     }
   };
 
-  const getSurgeries = async (query = "", program) => {
+  const getSurgeries = async (query = "", program, currentPage = 1, pageSize = 12) => {
     let startDate;
     let endDate;
     if (query?.includes("..")) {
@@ -151,17 +172,18 @@ export default function UseInstances() {
 
     const options = {
       events: {
-        resource: `trackedEntityInstances.json`,
+        resource: `tracker/trackedEntities`,
         params: {
           fields: ["trackedEntityInstance", "trackedEntityType", "attributes[attribute,value]", "enrollments[*]"],
           order: "created:desc",
           ouMode: "ALL",
           program,
-          pageSize: 50,
+          pageSize,
+          page: currentPage,
+          totalPages: true,
         },
       },
     };
-
     if (query) {
       const results = await Promise.all(
         dataElementIds?.map(async (dataElement) => {
@@ -181,24 +203,29 @@ export default function UseInstances() {
             },
           });
 
-          const trackedEntityInstances = events?.trackedEntityInstances;
+          const trackedEntityInstances = events?.instances;
 
           const enrollments = trackedEntityInstances?.flatMap((instance) => {
             return instance?.enrollments?.map((enrollment) => {
               return {
                 ...enrollment,
                 trackedEntityType: instance?.trackedEntityType,
-                trackedEntityInstance: instance?.trackedEntityInstance,
+                // trackedEntity: instance?.trackedEntity,
               };
             });
           });
           return enrollments?.filter(
             (enrollment, index, self) =>
-              index === self.findIndex((t) => t.trackedEntityInstance === enrollment.trackedEntityInstance)
+              index === self.findIndex((t) => t.trackedEntity === enrollment.trackedEntity)
           );
         })
       );
-      return results?.flatMap((result) => result);
+      return {
+        page: results?.page,
+        pageCount: results?.pageCount,
+        total: results?.total,
+        results: results?.flatMap((result) => result),
+      };
     }
 
     if (startDate && endDate) {
@@ -215,17 +242,22 @@ export default function UseInstances() {
     }
 
     const { events } = await engine.query(options);
-    const trackedEntityInstances = events?.trackedEntityInstances;
+    const trackedEntityInstances = events?.instances;
 
-    return trackedEntityInstances?.flatMap((instance) => {
-      return instance?.enrollments?.map((enrollment) => {
-        return {
-          ...enrollment,
-          trackedEntityType: instance?.trackedEntityType,
-          trackedEntityInstance: instance?.trackedEntityInstance,
-        };
-      });
-    });
+    return {
+      page: events?.page,
+      pageCount: events?.pageCount,
+      total: events?.total,
+      results: trackedEntityInstances?.flatMap((instance) => {
+        return instance?.enrollments?.map((enrollment) => {
+          return {
+            ...enrollment,
+            trackedEntityType: instance?.trackedEntityType,
+            // trackedEntity: instance?.trackedEntity,
+          };
+        });
+      }),
+    };
   };
 
   const getTrackedEntityInstance = async (tei) => {
@@ -243,7 +275,7 @@ export default function UseInstances() {
     } catch (error) {
       message.error("Error getting tracked entity instance");
     }
-  }
+  };
 
   const saveTrackedEntityInstance = async (tei, data) => {
     try {
@@ -257,7 +289,16 @@ export default function UseInstances() {
     } catch (error) {
       message.error("Error saving tracked entity instance");
     }
-  }
+  };
 
-  return { findPatientInstance, getEnrollmentData, getInstanceValues, getProgramValues, searchPatient, getSurgeries, getTrackedEntityInstance, saveTrackedEntityInstance};
+  return {
+    findPatientInstance,
+    getEnrollmentData,
+    getInstanceValues,
+    getProgramValues,
+    searchPatient,
+    getSurgeries,
+    getTrackedEntityInstance,
+    saveTrackedEntityInstance,
+  };
 }
