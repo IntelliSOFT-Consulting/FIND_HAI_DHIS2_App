@@ -1,11 +1,12 @@
 import { useDataEngine } from "@dhis2/app-runtime";
 import { format } from "date-fns";
-import { message } from 'antd';
+import { message } from "antd";
+import { attributes } from "../contants/ids";
 
 export default function UseEnrollment() {
   const engine = useDataEngine();
 
-  const createEnrollment = async (patientId, program, orgUnit) => {
+  const createEnrollment = async (patientId, program, orgUnit, date = format(new Date(), "yyyy-MM-dd")) => {
     try {
       const { response } = await engine.mutate({
         resource: "enrollments",
@@ -14,8 +15,9 @@ export default function UseEnrollment() {
           trackedEntityInstance: patientId,
           program,
           orgUnit,
-          enrollmentDate: format(new Date(), "yyyy-MM-dd"),
-          incidentDate: format(new Date(), "yyyy-MM-dd"),
+          enrollmentDate: date,
+          incidentDate: date,
+          occurredAt: date,
           status: "ACTIVE",
         },
       });

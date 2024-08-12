@@ -43,7 +43,6 @@ export default function Feedback() {
     const file = e.target.files[0];
     const name = e.target?.name;
     const fileId = await upload(file);
-    console.log(name);
     setFileResourceId({ [name]: fileId });
   };
 

@@ -16,6 +16,8 @@ import { formatValue } from "../lib/mapValues";
 import Accordion from "../components/Accordion";
 import { fetchHmisPatient } from "../api/hmis";
 import { mappings } from "../lib/mapValues";
+import { attributes } from "../contants/ids";
+import moment from "moment";
 
 dayjs.extend(weekday);
 dayjs.extend(localeData);
@@ -113,6 +115,7 @@ export default function Register() {
   const register = async (values) => {
     setLoading(true);
     try {
+      const surgeryDate = values[attributes.dateOfSurgery];
       const payload = {
         trackedEntityType: trackedEntityType?.id,
         orgUnit: id,
@@ -129,7 +132,12 @@ export default function Register() {
       });
 
       if (response?.status === "SUCCESS") {
-        const enrollmentId = await createEnrollment(response?.importSummaries[0]?.reference, program, id, values);
+        const enrollmentId = await createEnrollment(
+          response?.importSummaries[0]?.reference,
+          program,
+          id,
+          surgeryDate.format("YYYY-MM-DD")
+        );
         navigate(`/surgery/${response?.importSummaries[0]?.reference}/${enrollmentId}`);
       }
     } catch (error) {
@@ -218,7 +226,6 @@ export default function Register() {
         }
       }
     } catch (error) {
-      console.log(error.message === "Failed to fetch patient data from HMIS");
       if (error.message === "Failed to fetch patient data from HMIS") {
         fetchDemographics(attribute, value, true);
       } else {
@@ -263,46 +270,44 @@ export default function Register() {
     <Card title="Register Patient">
       <Spin spinning={loading || !registration} tip="Loading...">
         <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-          {registration?.map((section) => (
-            <>
-              <Accordion title={section.sectionName} open={true}>
-                <div className={classes.form}>
-                  {section?.dataElements?.map((dataElement) => {
-                    const rules = [
-                      {
-                        required: dataElement.required,
-                        message: `Please input ${dataElement.name}!`,
-                      },
-                      ...evaluateValidations(dataElement.validator, dataElement, formValues, allDataElements),
-                    ];
-                    const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
-                    return shouldShow ? (
-                      <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
-                        <InputItem
-                          type={dataElement.options ? "SELECT" : dataElement.valueType}
-                          options={dataElement.options}
-                          placeholder={`Enter ${dataElement.name}`}
-                          name={dataElement.id}
-                          onChange={(e) => {
-                            const name = e?.target?.name || dataElement.id;
-                            const value = e?.target?.value || e;
-                            const allFormValues = form.getFieldsValue();
-                            setFormValues(allFormValues);
-                            handleChange({ target: { name, value } });
-                          }}
-                          disabled={dataElement?.name?.toLowerCase()?.includes("secondary id")}
-                          onBlur={async () => {
-                            if (dataElement?.name?.toLowerCase()?.includes("patient id")) {
-                              await fetchDemographics(dataElement.id, form.getFieldValue(dataElement.id));
-                            }
-                          }}
-                        />
-                      </Form.Item>
-                    ) : null;
-                  })}
-                </div>
-              </Accordion>
-            </>
+          {registration?.map((section, index) => (
+            <Accordion title={section.sectionName} open={true} key={index}>
+              <div className={classes.form}>
+                {section?.dataElements?.map((dataElement) => {
+                  const rules = [
+                    {
+                      required: dataElement.required,
+                      message: `Please input ${dataElement.name}!`,
+                    },
+                    ...evaluateValidations(dataElement.validator, dataElement, formValues, allDataElements),
+                  ];
+                  const shouldShow = !dataElement.showif || evaluateShowIf(dataElement.showif, formValues);
+                  return shouldShow ? (
+                    <Form.Item key={dataElement.id} label={dataElement.name} name={dataElement.id} rules={rules}>
+                      <InputItem
+                        type={dataElement.options ? "SELECT" : dataElement.valueType}
+                        options={dataElement.options}
+                        placeholder={`Enter ${dataElement.name}`}
+                        name={dataElement.id}
+                        onChange={(e) => {
+                          const name = e?.target?.name || dataElement.id;
+                          const value = e?.target?.value || e;
+                          const allFormValues = form.getFieldsValue();
+                          setFormValues(allFormValues);
+                          handleChange({ target: { name, value } });
+                        }}
+                        disabled={dataElement?.name?.toLowerCase()?.includes("secondary id")}
+                        onBlur={async () => {
+                          if (dataElement?.name?.toLowerCase()?.includes("patient id")) {
+                            await fetchDemographics(dataElement.id, form.getFieldValue(dataElement.id));
+                          }
+                        }}
+                      />
+                    </Form.Item>
+                  ) : null;
+                })}
+              </div>
+            </Accordion>
           ))}
           <Button type="primary" htmlType="submit" loading={loading} disabled={loading}>
             Submit

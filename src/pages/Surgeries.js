@@ -46,6 +46,7 @@ export default function Surgeries() {
   const [weeks, _] = useState(generateWeeks());
   const [currentPage, setCurrentPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [searchParam, setSearchParam] = useState("");
 
   const styles = useStyles();
   const navigate = useNavigate();
@@ -62,8 +63,8 @@ export default function Surgeries() {
   };
 
   useEffect(() => {
-    if (program) fetchSurgeries();
-  }, [program, currentPage]);
+    if (program) getSurgeriesDebounced(searchParam);
+  }, [program, currentPage, searchParam]);
 
   const searchSurgeries = async (query = "") => {
     const searched = await getSurgeries(query, program, currentPage, 12);
@@ -135,14 +136,14 @@ export default function Surgeries() {
           placeholder="Search surgeries using patient ID or surgery ID"
           enterButton="Search"
           allowClear
-          onChange={(e) => getSurgeriesDebounced(e.target.value)}
+          onChange={(e) => setSearchParam(e.target.value)}
         />
         <DatePicker.RangePicker
           onChange={(dates) => {
             if (dates?.length) {
-              getSurgeriesDebounced(dates[0].format("YYYY-MM-DD") + ".." + dates[1].format("YYYY-MM-DD"));
+              setSearchParam(dates[0].format("YYYY-MM-DD") + ".." + dates[1].format("YYYY-MM-DD"));
             } else {
-              getSurgeriesDebounced();
+              setSearchParam("");
             }
           }}
           className={styles.datePicker}
@@ -151,9 +152,9 @@ export default function Surgeries() {
           placeholder="Select a week"
           onChange={(value) => {
             if (value) {
-              getSurgeriesDebounced(value);
+              setSearchParam(value);
             } else {
-              getSurgeriesDebounced();
+              setSearchParam("");
             }
           }}
           allowClear
